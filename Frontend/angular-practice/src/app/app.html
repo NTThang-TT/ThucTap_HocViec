@@ -1,0 +1,39 @@
+<div style="padding: 30px; font-family: Arial;">
+  <h2 style="color: #0056b3; text-align: center;">{{ title }}</h2>
+
+  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    
+    @for (emp of employees; track emp.id) {
+      <div style="border-bottom: 1px solid #ccc; padding: 15px 0;">
+        
+        <strong style="font-size: 18px;">{{ emp.name }}</strong>
+
+        @if (emp.isActive) {
+          <span style="color: green; margin-left: 10px; font-size: 14px;">(Đang làm việc)</span>
+        } @else {
+          <span style="color: red; margin-left: 10px; font-size: 14px; font-style: italic;">(Đã nghỉ việc)</span>
+        }
+
+        <div style="margin-top: 10px; font-size: 14px; color: #555;">
+          Vai trò hệ thống: 
+          @switch (emp.role) {
+            @case ('Backend Developer') {
+              <span style="background: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">.NET 10 Dev</span>
+            }
+            @case ('Frontend Developer') {
+              <span style="background: #e83e8c; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">Angular 21</span>
+            }
+            @default {
+              <span style="background: #6c757d; color: white; padding: 4px 8px; border-radius: 4px;">Chưa phân loại</span>
+            }
+          }
+        </div>
+
+      </div>
+    }
+
+  </div>
+</div>
+
+
+
