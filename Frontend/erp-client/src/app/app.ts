@@ -1,40 +1,36 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 
-// Định nghĩa một Interface quản lý thông tin tiến độ (Kiến thức TypeScript)
-interface ProjectProgress {
+// Định nghĩa khuôn mẫu giống hệt Record bên C#
+interface Employee {
+  id: number;
   name: string;
-  currentWeek: number;
-  techStack: string;
+  role: string;
 }
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
 })
-export class AppComponent {
-  // 1. Thuộc tính dùng cho Interpolation (Hiển thị chuỗi)
-  public mainTitle = 'Hệ thống Quản lý Thực tập - Simple ERP';
+export class AppComponent implements OnInit {
+  public title = 'Danh sách nhân sự (Dữ liệu từ .NET 10)';
+  public employees: Employee[] = [];
+  
+  // Tiêm (Inject) công cụ gọi HTTP
+  private http = inject(HttpClient);
 
-  // 2. Đối tượng chứa dữ liệu chi tiết
-  public progress: ProjectProgress = {
-    name: 'Dự án Simple ERP',
-    currentWeek: 1,
-    techStack: 'Angular 21 + .NET 10'
-  };
-
-  // 3. Thuộc tính dùng cho Property Binding (Bật/Tắt nút bấm)
-  public isProcessing = false;
-
-  // 4. Hàm xử lý dùng cho Event Binding (Bắt sự kiện click)
-  public giaTangTienDo(): void {
-    this.progress.currentWeek++; // Mỗi lần bấm nút sẽ tăng số tuần lên 1
-
-    if (this.progress.currentWeek >= 14) {
-      alert('Chúc mừng! Bạn đã hoàn thành lộ trình thực tập 14 tuần!');
-      this.isProcessing = true; // Vô hiệu hóa nút bấm khi đạt mục tiêu
-    }
+  // Hàm ngOnInit tự động chạy ngay khi giao diện vừa load xong
+  ngOnInit(): void {
+    // Gọi API sang cổng 5000 của C#
+    this.http.get<Employee[]>('http://localhost:5000/api/employees')
+      .subscribe({
+        next: (data) => {
+          this.employees = data; // Gán dữ liệu trả về vào biến
+        },
+        error: (err) => {
+          console.error('Lỗi kết nối Backend:', err);
+        }
+      });
   }
 }
