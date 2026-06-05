@@ -1,32 +1,78 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 
-Console.WriteLine("=== NGÀY 2: THỰC HÀNH C# CƠ BẢN VỚI .NET 10 ===");
-
-// 1. KHOỞI TẠO DANH SÁCH (Collections)
-List<Employee> employees = new List<Employee>
+namespace SimpleERP
 {
-    new Employee(1, "Nguyen Van A", "Manager"),
-    new Employee(2, "Tran Thi B", "Developer"),
-    new Employee(3, "Le Van C", "Intern")
-};
-
-// 2. VÒNG LẶP & PATTERN MATCHING (Switch Expression)
-Console.WriteLine("\n--- Danh sách công việc hôm nay ---");
-foreach (var emp in employees)
-{
-    // Pattern Matching: Cú pháp switch mới, ngắn gọn và trả về giá trị trực tiếp
-    string task = emp.Role switch
+    class Program
     {
-        "Manager" => "Duyệt báo cáo và phân công công việc.",
-        "Developer" => "Viết API quản lý sản phẩm.",
-        "Intern" => "Học C# cơ bản và cài đặt môi trường.",
-        _ => "Chưa phân công công việc." // Ký tự _ thay thế cho 'default'
-    };
+        static void Main(string[] agrs)
+        {
+            Console.WriteLine("C#");
 
-    // Chuỗi nội suy (String Interpolation)
-    Console.WriteLine($"[{emp.Role}] {emp.Name}: {task}");
+            List<Employee> employees = new List<Employee>
+            {
+                new Employee(1,"Nguyen Van A","Manager"),
+                new Employee(2,"Tran Van B","Developer"),
+                new Employee(3,"Nguyen Thi C","Intern")
+            };
+
+            Console.WriteLine("\nDanh sach nv");
+            foreach (var emp in employees)
+            {
+                string task = "";
+
+                switch (emp.Role)
+                {
+                    case "Manager":
+                        task = "Duyet thong bao va phan cong viec.";
+                        break;
+                    case "Developer":
+                        task = "Viet API quan ly san pham.";
+                        break;
+                    case "Intern":
+                        task = "Hoc C# co ban va cai dat moi truong.";
+                        break;
+                    default:
+                        task = "Chua phan cong cong viec.";
+                        break;
+                }
+                Console.WriteLine($"[{emp.Role}] {emp.Name}: {task}");
+            }
+        }
+    }
+    public class Employee
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Role { get; set; }
+        public Employee(int id, string name, string role)
+        {
+            Id = id;
+            Name = name;
+            Role = role;
+        }
+    }
 }
 
-// 3. RECORD: Đặt khai báo ở cuối file (Quy định của Top-level statements)
-public record Employee(int Id, string Name, string Role);
+// //Console.WriteLine("===.NET 10 ===");
+// //List<Employee> employees = new List<Employee>
+// {
+//     new Employee(1, "Nguyen Van A", "Manager"),
+//     new Employee(2, "Tran Thi B", "Developer"),
+//     new Employee(3, "Le Van C", "Intern")
+// };
+// Console.WriteLine("\n--- Danh sách công việc hôm nay ---");
+// foreach (var emp in employees)
+// {
+//     string task = emp.Role switch
+//     {
+//         "Manager" => "Duyệt báo cáo và phân công công việc.",
+//         "Developer" => "Viết API quản lý sản phẩm.",
+//         "Intern" => "Học C# cơ bản và cài đặt môi trường.",
+//         _ => "Chưa phân công công việc."
+//     };
+//     // Chuỗi nội suy (String Interpolation)
+//     Console.WriteLine($"[{emp.Role}] {emp.Name}: {task}");
+// }
+// public record Employee(int Id, string Name, string Role);

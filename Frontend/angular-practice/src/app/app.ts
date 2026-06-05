@@ -20,6 +20,6 @@ export class AppComponent {
   public employees: Employee[] = [
     { id: 1, name: "Nguyễn Văn A", role: "Backend Developer", isActive: true },
     { id: 2, name: "Trần Thị B", role: "Frontend Developer", isActive: true },
-    { id: 3, name: "Lê Văn C", role: "Intern", isActive: false }
+    { id: 3, name: "Lê Văn C", role: "Intern", isActive: true }
   ];
 }
