@@ -1,0 +1,22 @@
+<div style="font-family: Arial, sans-serif;">
+  <h3>Danh Sách Nhân Sự Dự Án ERP</h3>
+
+  @if (isLoading) {
+    <p style="color: blue; font-style: italic;">Đang tải dữ liệu từ hệ thống, vui lòng chờ 1.5 giây...</p>
+  } @else {
+    
+    @for (nv of danhSach; track nv.id) {
+      <div style="margin-bottom: 12px; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+        <strong style="font-size: 16px;">{{ nv.ten }}</strong>
+        
+        <span style="margin-left: 15px;">
+          @switch (nv.role) {
+            @case ('Backend') { <span style="background: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">.NET Dev</span> }
+            @case ('AI') { <span style="background: #6f42c1; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">AI Model</span> }
+            @default { <span style="background: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Thực tập sinh</span> }
+          }
+        </span>
+      </div>
+    }
+  }
+</div>
