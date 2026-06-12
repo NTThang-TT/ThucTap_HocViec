@@ -1,0 +1,15 @@
+  <button (click)="updateUser()">UpDate</button>
+  <button (click)="destroy()">Destroy Child</button>
+
+  <br/>
+  <br/>
+
+  @if (!isChildDestroyed) {
+  <app-child [userName]="userName">
+    <div #contentWrapper>foo</div>
+  </app-child>
+}
+
+  @if (isChildDestroyed) {
+  <div>Child component is destroyed! :(</div>
+}
