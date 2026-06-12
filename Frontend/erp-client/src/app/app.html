@@ -1,14 +1,28 @@
-<div style="padding: 30px; font-family: Arial;">
-  <h2 style="color: #0056b3;">{{ title }}</h2>
+<main class="container">
+  <h1>{{ title }}</h1>
 
-  <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-    @for (emp of employees; track emp.id) {
-    <div style="border-bottom: 1px solid #ddd; padding: 10px 0;">
-      <strong style="color: #333; font-size: 18px;">{{ emp.name }}</strong>
-      - <span style="color: #28a745;">{{ emp.role }}</span>
-    </div>
-    } @empty {
-    <p style="color: red; font-style: italic;">Đang tải dữ liệu từ Backend... (Hãy đảm bảo .NET đang chạy)</p>
-    }
-  </div>
-</div>
+  <p class="description">Dữ liệu này được gõ cứng.</p>
+
+  <table class="erp-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tên Nhân Viên</th>
+        <th>Chức Vụ</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (nv of danhSach; track nv.id) {
+      <tr [class]="
+          nv.role === 'Backend Developer' ? 'role-backend' :
+          nv.role === 'Frontend Developer' ? 'role-frontend' :
+          nv.role === 'AI Engineer' ? 'role-ai' : ''
+        ">
+        <td>{{ nv.id }}</td>
+        <td class="name-column">{{ nv.ten }}</td>
+        <td>{{ nv.role }}</td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</main>

@@ -1,0 +1,82 @@
+/* --- Bố cục tổng thể --- */
+.container {
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+
+.description {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+/* --- Phong cách Bảng --- */
+.erp-table {
+    width: 100%;
+    border-collapse: collapse;
+    /* Gộp biên để bảng gọn */
+    background-color: white;
+    border-radius: 4px;
+    overflow: hidden;
+    /* Bo góc bảng */
+}
+
+/* --- Phong cách Header Bảng --- */
+.erp-table thead tr {
+    background-color: #007bff;
+    /* Màu xanh chủ đạo */
+    color: white;
+    text-align: left;
+}
+
+.erp-table th,
+.erp-table td {
+    padding: 12px 15px;
+    /* Tạo khoảng trống trong ô */
+    border-bottom: 1px solid #ddd;
+    /* Đường gạch dưới */
+}
+
+.erp-table th {
+    font-weight: bold;
+}
+
+/* Cột tên in đậm */
+.erp-table td.name-column {
+    font-weight: 600;
+}
+
+/* Hiệu ứng khi di chuột qua hàng */
+.erp-table tbody tr:hover {
+    background-color: #e6e6e6;
+}
+
+/* --- ĐỊNH NGHĨA MÀU SẮC DỰA TRÊN CHỨC VỤ --- */
+/* Màu cho Backend Developer (Xanh dương nhạt) */
+.role-backend {
+    background-color: rgba(173, 216, 230, 0.5);
+    /* lightblue với độ trong suốt */
+}
+
+/* Màu cho Frontend Developer (Xanh lá cây nhạt) */
+.role-frontend {
+    background-color: rgba(144, 238, 144, 0.5);
+    /* lightgreen với độ trong suốt */
+}
+
+/* Màu cho AI Engineer (Tím lavender nhạt) */
+.role-ai {
+    background-color: rgba(230, 230, 250, 0.5);
+    /* lavender với độ trong suốt */
+}

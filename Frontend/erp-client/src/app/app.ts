@@ -1,36 +1,19 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-
-// Định nghĩa khuôn mẫu giống hệt Record bên C#
-interface Employee {
-  id: number;
-  name: string;
-  role: string;
-}
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
+  standalone: true, // Không cần import thêm module hay router gì ở Tuần 1
   templateUrl: './app.html',
+  styleUrl: './app.scss'
 })
-export class AppComponent implements OnInit {
-  public title = 'Danh sách nhân sự (Dữ liệu từ .NET 10)';
-  public employees: Employee[] = [];
-  
-  // Tiêm (Inject) công cụ gọi HTTP
-  private http = inject(HttpClient);
+export class AppComponent {
+  // Biến tiêu đề để test nội suy (Interpolation)
+  public title = 'Dự án Simple ERP - Tuần 1';
 
-  // Hàm ngOnInit tự động chạy ngay khi giao diện vừa load xong
-  ngOnInit(): void {
-    // Gọi API sang cổng 5000 của C#
-    this.http.get<Employee[]>('http://localhost:5000/api/employees')
-      .subscribe({
-        next: (data) => {
-          this.employees = data; // Gán dữ liệu trả về vào biến
-        },
-        error: (err) => {
-          console.error('Lỗi kết nối Backend:', err);
-        }
-      });
-  }
+  // Khai báo một mảng dữ liệu tĩnh trực tiếp (Mock Data)
+  public danhSach = [
+    { id: 1, ten: 'Nguyen Van A', role: 'Backend Developer' },
+    { id: 2, ten: 'Tran Thi B', role: 'Frontend Developer' },
+    { id: 3, ten: 'Le Van C', role: 'AI Engineer' }
+  ];
 }
