@@ -1,0 +1,31 @@
+<div>
+  <h2>Bảng điều khiển học tập</h2>
+
+  <!-- @if: Kiểm tra điều kiện hiển thị -->
+  @if (isLoading) {
+    <p>Đang tải dữ liệu từ Backend...</p>
+  } @else {
+    <ul>
+      <!-- @for: Lặp mảng dữ liệu -->
+      @for (item of activities; track item.id) {
+        <li>
+          <!-- Data binding nội suy -->
+          <strong>{{ item.name }}</strong> (Điểm: {{ item.score }}) - 
+          
+          <!-- @switch: Hiển thị theo từng trường hợp -->
+          @switch (item.category) {
+            @case ('Study') {
+              <span>📚 Học tập</span>
+            }
+            @case ('Play') {
+              <span>🎮 Giải trí</span>
+            }
+            @default {
+              <span>Khác</span>
+            }
+          }
+        </li>
+      }
+    </ul>
+  }
+</div><p>dashboard works!</p>

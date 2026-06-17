@@ -1,3 +1,9 @@
 import { Routes } from '@angular/router';
+import { DashboardComponent } from './dashboard/dashboard';
 
-export const routes: Routes = [];
+// Routing: Điều hướng trang web
+export const routes: Routes = [
+  { path: 'dashboard', component: DashboardComponent },
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
+  
+];
