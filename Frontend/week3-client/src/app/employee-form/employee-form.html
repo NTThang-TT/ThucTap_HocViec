@@ -1,0 +1,49 @@
+<div style="max-width: 500px; margin: 50px auto; padding: 30px; border: 1px solid #e8e8e8; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: white;">
+  <h2 style="text-align: center; margin-bottom: 24px;">Thêm Nhân Sự Mới</h2>
+
+  <form nz-form [formGroup]="frmNhanSu" nzLayout="vertical" (ngSubmit)="onSubmit()">
+    
+    <nz-form-item>
+      <nz-form-label nzRequired>Họ và tên</nz-form-label>
+      <nz-form-control nzErrorTip="Tên không được để trống và phải từ 5 ký tự trở lên!">
+        <input nz-input formControlName="ten" placeholder="Ví dụ: Nguyễn Tất Thắng" />
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-label nzRequired>Chức vụ</nz-form-label>
+      <nz-form-control nzErrorTip="Vui lòng không để trống chức vụ!">
+        <input nz-input formControlName="chucVu" placeholder="Ví dụ: Backend Developer" />
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-control>
+        <button nz-button nzType="primary" nzBlock>Lưu thông tin</button>
+      </nz-form-control>
+    </nz-form-item>
+
+  </form>
+  <div style="max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #e8e8e8; border-radius: 8px; background: white;">
+  <h3 style="margin-bottom: 20px;">Danh sách nhân sự hiện tại</h3>
+  
+  <nz-table #bangNhanSu [nzData]="danhSachNhanSu" nzBordered>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Họ và tên</th>
+        <th>Chức vụ</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (nhanVien of bangNhanSu.data; track nhanVien.id) {
+        <tr>
+          <td>{{ nhanVien.id }}</td>
+          <td><strong>{{ nhanVien.ten }}</strong></td>
+          <td>{{ nhanVien.chucVu }}</td>
+        </tr>
+      }
+    </tbody>
+  </nz-table>
+</div>
+</div>

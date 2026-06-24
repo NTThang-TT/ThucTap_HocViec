@@ -1,0 +1,6 @@
+@Week3Api_HostAddress = http://localhost:5244
+
+GET {{Week3Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
