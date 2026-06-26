@@ -32,3 +32,6 @@ D:\Thuctap\ThucTap_HocViec\Backend\SimpleErpApi\obj\Debug\net10.0\refint\SimpleE
 D:\Thuctap\ThucTap_HocViec\Backend\SimpleErpApi\obj\Debug\net10.0\SimpleErpApi.pdb
 D:\Thuctap\ThucTap_HocViec\Backend\SimpleErpApi\obj\Debug\net10.0\SimpleErpApi.genruntimeconfig.cache
 D:\Thuctap\ThucTap_HocViec\Backend\SimpleErpApi\obj\Debug\net10.0\ref\SimpleErpApi.dll
+D:\Thuctap\ThucTap_HocViec\Backend\SimpleErpApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
+D:\Thuctap\ThucTap_HocViec\Backend\SimpleErpApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+D:\Thuctap\ThucTap_HocViec\Backend\SimpleErpApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
