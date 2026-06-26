@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { NhanSu } from './nhan-su';
+import { NhanSuComponent } from './nhan-su';
 
 describe('NhanSu', () => {
-  let component: NhanSu;
-  let fixture: ComponentFixture<NhanSu>;
+  let component: NhanSuComponent;
+  let fixture: ComponentFixture<NhanSuComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NhanSu],
+      imports: [NhanSuComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(NhanSu);
+    fixture = TestBed.createComponent(NhanSuComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
