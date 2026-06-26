@@ -1,151 +1,234 @@
-<div class="page-container">
-  <!-- Page Header -->
+<div class="page">
+  <!-- Header -->
   <header class="page-header">
-    <div class="header-content">
-      <div class="header-text">
-        <h1 class="page-title">
-          <span class="title-icon">👥</span>
-          Quản lý Nhân Sự
-        </h1>
-        <p class="page-subtitle">Danh sách nhân sự Dự Án ERP — Theo dõi và quản lý đội ngũ</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-primary">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          Thêm nhân viên
-        </button>
-      </div>
+    <div>
+      <h1 class="page-title">👥 Quản lý Nhân Sự</h1>
+      <p class="page-sub">Thêm, sửa, xóa nhân viên — Dữ liệu từ API</p>
     </div>
+    <button class="btn btn-primary" (click)="openCreateForm()">
+      ＋ Thêm nhân viên
+    </button>
   </header>
 
-  @if (isLoading) {
-    <!-- Loading State -->
-    <div class="loading-container">
-      <div class="loading-spinner">
-        <div class="spinner-ring"></div>
-        <div class="spinner-ring"></div>
-        <div class="spinner-ring"></div>
+  <!-- Success Message -->
+  @if (successMessage) {
+    <div class="alert alert-success">
+      <span>✅</span>
+      <span>{{ successMessage }}</span>
+      <button class="alert-close" (click)="successMessage = ''">✕</button>
+    </div>
+  }
+
+  <!-- Error Message -->
+  @if (errorMessage) {
+    <div class="alert alert-error">
+      <span>❌</span>
+      <div>
+        <strong>{{ errorMessage }}</strong>
+        @for (err of formErrors; track err) {
+          <p class="alert-detail">• {{ err }}</p>
+        }
       </div>
-      <p class="loading-text">Đang tải dữ liệu từ hệ thống...</p>
-      <p class="loading-sub">Vui lòng chờ trong giây lát</p>
+      <button class="alert-close" (click)="clearMessages()">✕</button>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (isLoading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Đang tải dữ liệu từ API...</p>
     </div>
   } @else {
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-      <div class="stat-card stat-total">
-        <div class="stat-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ totalNhanVien }}</span>
-          <span class="stat-label">Tổng nhân sự</span>
-        </div>
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <span class="stat-num">{{ danhSach.length }}</span>
+        <span class="stat-label">Tổng nhân sự</span>
       </div>
-
-      <div class="stat-card stat-active">
-        <div class="stat-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <path d="M22 4 12 14.01l-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ activeCount }}</span>
-          <span class="stat-label">Đang hoạt động</span>
-        </div>
-      </div>
-
-      <div class="stat-card stat-roles">
-        <div class="stat-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">5</span>
-          <span class="stat-label">Vị trí công việc</span>
-        </div>
-      </div>
-
-      <div class="stat-card stat-projects">
-        <div class="stat-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">1</span>
-          <span class="stat-label">Dự án ERP</span>
-        </div>
+      <div class="stat-card">
+        <span class="stat-num stat-green">{{ getActiveCount() }}</span>
+        <span class="stat-label">Đang hoạt động</span>
       </div>
     </div>
 
-    <!-- Team Table -->
-    <div class="table-container">
-      <div class="table-header">
-        <h2 class="table-title">Danh sách thành viên</h2>
-        <div class="table-search">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M14 14l-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <input type="text" placeholder="Tìm kiếm nhân viên..." class="search-input" />
-        </div>
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-top">
+        <h2 class="table-title">Danh sách nhân viên</h2>
+        <button class="btn btn-ghost" (click)="loadData()">🔄 Tải lại</button>
       </div>
 
-      <div class="team-grid">
-        @for (nv of danhSach; track nv.id; let i = $index) {
-          <div class="team-card" [style.animation-delay]="(i * 0.08) + 's'">
-            <div class="card-top">
-              <div class="avatar" [style.background]="getAvatarGradient(nv.id)">
-                {{ getInitials(nv.ten) }}
-                <span class="status-dot"
-                  [class.active]="nv.trangThai === 'active'"
-                  [class.busy]="nv.trangThai === 'busy'"
-                  [class.offline]="nv.trangThai === 'offline'">
+      @if (danhSach.length === 0) {
+        <div class="empty">
+          <p>📭 Chưa có nhân viên nào</p>
+          <button class="btn btn-primary" (click)="openCreateForm()">Thêm nhân viên đầu tiên</button>
+        </div>
+      } @else {
+        <!-- Desktop Table -->
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nhân viên</th>
+              <th>Vai trò</th>
+              <th>Email</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (nv of danhSach; track nv.id) {
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar" [style.background]="getAvatarColor(nv.id)">
+                      {{ getInitials(nv.ten) }}
+                    </div>
+                    <span class="user-name">{{ nv.ten }}</span>
+                  </div>
+                </td>
+                <td><span class="role-tag">{{ nv.role }}</span></td>
+                <td class="text-muted">{{ nv.email }}</td>
+                <td>
+                  <span class="status-badge"
+                    [class.status-active]="nv.trang_thai === 'active'"
+                    [class.status-busy]="nv.trang_thai === 'busy'"
+                    [class.status-offline]="nv.trang_thai === 'offline'">
+                    @switch (nv.trang_thai) {
+                      @case ('active') { ● Online }
+                      @case ('busy') { ● Bận }
+                      @default { ● Offline }
+                    }
+                  </span>
+                </td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-icon btn-edit" (click)="openEditForm(nv)" title="Sửa">✏️</button>
+                    <button class="btn-icon btn-delete" (click)="confirmDelete(nv)" title="Xóa">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <!-- Mobile Cards -->
+        <div class="mobile-cards">
+          @for (nv of danhSach; track nv.id) {
+            <div class="mobile-card">
+              <div class="mobile-card-top">
+                <div class="user-cell">
+                  <div class="avatar" [style.background]="getAvatarColor(nv.id)">
+                    {{ getInitials(nv.ten) }}
+                  </div>
+                  <div>
+                    <div class="user-name">{{ nv.ten }}</div>
+                    <div class="text-muted text-sm">{{ nv.email }}</div>
+                  </div>
+                </div>
+                <span class="status-badge"
+                  [class.status-active]="nv.trang_thai === 'active'"
+                  [class.status-busy]="nv.trang_thai === 'busy'"
+                  [class.status-offline]="nv.trang_thai === 'offline'">
+                  @switch (nv.trang_thai) {
+                    @case ('active') { ● Online }
+                    @case ('busy') { ● Bận }
+                    @default { ● Offline }
+                  }
                 </span>
               </div>
-              <div class="card-info">
-                <h3 class="card-name">{{ nv.ten }}</h3>
-                <p class="card-email">{{ nv.email }}</p>
+              <div class="mobile-card-bottom">
+                <span class="role-tag">{{ nv.role }}</span>
+                <div class="action-btns">
+                  <button class="btn-icon btn-edit" (click)="openEditForm(nv)">✏️</button>
+                  <button class="btn-icon btn-delete" (click)="confirmDelete(nv)">🗑️</button>
+                </div>
               </div>
             </div>
+          }
+        </div>
+      }
+    </div>
+  }
 
-            <div class="card-bottom">
-              <span class="role-badge"
-                [class.role-backend]="nv.role === 'Backend'"
-                [class.role-ai]="nv.role === 'AI'"
-                [class.role-frontend]="nv.role === 'Frontend'"
-                [class.role-devops]="nv.role === 'DevOps'"
-                [class.role-intern]="nv.role === 'Intern'">
-                @switch (nv.role) {
-                  @case ('Backend') { ⚙️ .NET Dev }
-                  @case ('AI') { 🤖 AI Engineer }
-                  @case ('Frontend') { 🎨 Frontend Dev }
-                  @case ('DevOps') { 🚀 DevOps }
-                  @default { 📚 Thực tập sinh }
-                }
-              </span>
-              <span class="status-text"
-                [class.text-active]="nv.trangThai === 'active'"
-                [class.text-busy]="nv.trangThai === 'busy'"
-                [class.text-offline]="nv.trangThai === 'offline'">
-                @switch (nv.trangThai) {
-                  @case ('active') { ● Online }
-                  @case ('busy') { ● Bận }
-                  @default { ● Offline }
-                }
-              </span>
+  <!-- ==================== FORM MODAL ==================== -->
+  @if (showForm) {
+    <div class="modal-overlay" (click)="closeForm()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ isEditing ? '✏️ Sửa nhân viên' : '➕ Thêm nhân viên mới' }}</h3>
+          <button class="modal-close" (click)="closeForm()">✕</button>
+        </div>
+
+        <!-- Form Errors -->
+        @if (formErrors.length > 0) {
+          <div class="alert alert-error" style="margin: 0 20px;">
+            <span>⚠️</span>
+            <div>
+              @for (err of formErrors; track err) {
+                <p>• {{ err }}</p>
+              }
             </div>
           </div>
         }
+
+        <form class="modal-body" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label for="ten">Họ và tên *</label>
+            <input id="ten" type="text" [(ngModel)]="formData.ten" name="ten"
+              placeholder="Nhập họ và tên" required>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input id="email" type="email" [(ngModel)]="formData.email" name="email"
+              placeholder="vd: abc@erp.vn" required>
+          </div>
+
+          <div class="form-group">
+            <label for="role">Vai trò</label>
+            <select id="role" [(ngModel)]="formData.role" name="role">
+              <option value="Backend Developer">Backend Developer</option>
+              <option value="Frontend Developer">Frontend Developer</option>
+              <option value="AI Engineer">AI Engineer</option>
+              <option value="DevOps Engineer">DevOps Engineer</option>
+              <option value="Intern">Intern</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="trangThai">Trạng thái</label>
+            <select id="trangThai" [(ngModel)]="formData.trang_thai" name="trang_thai">
+              <option value="active">🟢 Online</option>
+              <option value="busy">🟡 Bận</option>
+              <option value="offline">⚪ Offline</option>
+            </select>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" (click)="closeForm()">Hủy</button>
+            <button type="submit" class="btn btn-primary">
+              {{ isEditing ? 'Cập nhật' : 'Thêm mới' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ==================== DELETE CONFIRM ==================== -->
+  @if (deletingNv) {
+    <div class="modal-overlay" (click)="cancelDelete()">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-body" style="text-align: center; padding: 28px;">
+          <p style="font-size: 36px; margin-bottom: 12px;">🗑️</p>
+          <h3 style="margin-bottom: 6px;">Xác nhận xóa?</h3>
+          <p class="text-muted">Bạn có chắc muốn xóa <strong>{{ deletingNv.ten }}</strong>?</p>
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button class="btn btn-ghost" (click)="cancelDelete()">Hủy</button>
+            <button class="btn btn-danger" (click)="onDelete(deletingNv)">Xóa</button>
+          </div>
+        </div>
       </div>
     </div>
   }

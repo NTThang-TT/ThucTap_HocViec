@@ -1,66 +1,177 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { NhanVienService } from '../services/nhan-vien.service';
+import { NhanVien, NhanVienDto } from '../models/nhan-vien.model';
 
-// Định nghĩa khuôn mẫu dữ liệu
-interface NhanVien {
-  id: number;
-  ten: string;
-  role: string;
-  email: string;
-  trangThai: 'active' | 'busy' | 'offline';
-}
+// ==========================================
+// CONTROLLER — Xử lý logic CRUD
+// ==========================================
 
 @Component({
   selector: 'app-nhan-su',
   standalone: true,
+  imports: [FormsModule],
   templateUrl: './nhan-su.html',
   styleUrls: ['./nhan-su.scss']
 })
 export class NhanSuComponent implements OnInit {
-  public danhSach: NhanVien[] = []; //generic
-  public isLoading = true;
+  // === STATE ===
+  danhSach: NhanVien[] = [];
+  isLoading = true;
+  errorMessage = '';
+  successMessage = '';
 
-  // Stats cho dashboard
-  public totalNhanVien = 0;
-  public activeCount = 0;
-  public roleStats: { [key: string]: number } = {};
+  // === FORM STATE ===
+  showForm = false;
+  isEditing = false;
+  editingId: number | null = null;
 
-  // VÒNG ĐỜI (LIFECYCLE): Chạy tự động ngay khi mở Component
+  // Form data (two-way binding với [(ngModel)])
+  formData: NhanVienDto = {
+    ten: '',
+    role: 'Backend Developer',
+    email: '',
+    trang_thai: 'active'
+  };
+  formErrors: string[] = [];
+
+  // Confirm delete
+  deletingNv: NhanVien | null = null;
+
+  // === INJECT SERVICE ===
+  private nhanVienService = inject(NhanVienService);
+
+  // === LIFECYCLE: Load dữ liệu khi mở trang ===
   ngOnInit(): void {
-    setTimeout(() => {
-      this.danhSach = [
-        { id: 1, ten: 'Nguyễn Tất Thắng', role: 'Backend', email: 'thang.nt@erp.vn', trangThai: 'active' },
-        { id: 2, ten: 'Bảo Hân Nguyễn', role: 'AI', email: 'han.nb@erp.vn', trangThai: 'active' },
-        { id: 3, ten: 'Trần Văn C', role: 'Intern', email: 'c.tv@erp.vn', trangThai: 'busy' },
-        { id: 4, ten: 'Lê Thị D', role: 'Frontend', email: 'd.lt@erp.vn', trangThai: 'active' },
-        { id: 5, ten: 'Phạm Minh E', role: 'Backend', email: 'e.pm@erp.vn', trangThai: 'offline' },
-        { id: 6, ten: 'Hoàng Văn F', role: 'DevOps', email: 'f.hv@erp.vn', trangThai: 'active' },
-      ];
-
-      this.totalNhanVien = this.danhSach.length;
-      this.activeCount = this.danhSach.filter(nv => nv.trangThai === 'active').length;
-
-      // Tính số lượng theo role
-      this.danhSach.forEach(nv => {
-        this.roleStats[nv.role] = (this.roleStats[nv.role] || 0) + 1;
-      });
-
-      this.isLoading = false; // Lấy xong dữ liệu thì tắt dòng chữ "Đang tải"
-    }, 1500);
+    this.loadData();
   }
 
+  // === CRUD METHODS ===
+
+  /** GET — Lấy danh sách từ API */
+  loadData(): void {
+    this.isLoading = true;
+    this.clearMessages();
+
+    this.nhanVienService.getAll().subscribe(res => {
+      if (res.success) {
+        this.danhSach = res.data ?? [];
+      } else {
+        this.errorMessage = res.message;
+        this.formErrors = res.errors;
+      }
+      this.isLoading = false;
+    });
+  }
+
+  /** POST — Thêm nhân viên mới */
+  onCreate(): void {
+    this.clearMessages();
+    this.formErrors = [];
+
+    this.nhanVienService.create(this.formData).subscribe(res => {
+      if (res.success) {
+        this.successMessage = res.message;
+        this.closeForm();
+        this.loadData();
+      } else {
+        this.formErrors = res.errors;
+      }
+    });
+  }
+
+  /** PUT — Cập nhật nhân viên */
+  onUpdate(): void {
+    if (!this.editingId) return;
+    this.clearMessages();
+    this.formErrors = [];
+
+    this.nhanVienService.update(this.editingId, this.formData).subscribe(res => {
+      if (res.success) {
+        this.successMessage = res.message;
+        this.closeForm();
+        this.loadData();
+      } else {
+        this.formErrors = res.errors;
+      }
+    });
+  }
+
+  /** DELETE — Xóa nhân viên */
+  onDelete(nv: NhanVien): void {
+    this.clearMessages();
+
+    this.nhanVienService.delete(nv.id).subscribe(res => {
+      if (res.success) {
+        this.successMessage = res.message;
+        this.loadData();
+      } else {
+        this.errorMessage = res.message;
+      }
+      this.deletingNv = null;
+    });
+  }
+
+  // === FORM HELPERS ===
+
+  /** Mở form THÊM mới */
+  openCreateForm(): void {
+    this.isEditing = false;
+    this.editingId = null;
+    this.formData = { ten: '', role: 'Backend Developer', email: '', trang_thai: 'active' };
+    this.formErrors = [];
+    this.showForm = true;
+  }
+
+  /** Mở form SỬA */
+  openEditForm(nv: NhanVien): void {
+    this.isEditing = true;
+    this.editingId = nv.id;
+    this.formData = { ten: nv.ten, role: nv.role, email: nv.email, trang_thai: nv.trang_thai };
+    this.formErrors = [];
+    this.showForm = true;
+  }
+
+  /** Đóng form */
+  closeForm(): void {
+    this.showForm = false;
+    this.formErrors = [];
+  }
+
+  /** Submit form (tạo hoặc sửa) */
+  onSubmit(): void {
+    this.isEditing ? this.onUpdate() : this.onCreate();
+  }
+
+  /** Mở confirm xóa */
+  confirmDelete(nv: NhanVien): void {
+    this.deletingNv = nv;
+  }
+
+  /** Hủy xóa */
+  cancelDelete(): void {
+    this.deletingNv = null;
+  }
+
+  /** Xóa messages */
+  clearMessages(): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+  }
+
+  /** Lấy chữ cái đầu tên */
   getInitials(name: string): string {
     return name.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase();
   }
 
-  getAvatarGradient(id: number): string {
-    const gradients = [
-      'linear-gradient(135deg, #6366f1, #8b5cf6)',
-      'linear-gradient(135deg, #10b981, #06b6d4)',
-      'linear-gradient(135deg, #f43f5e, #f97316)',
-      'linear-gradient(135deg, #f59e0b, #ef4444)',
-      'linear-gradient(135deg, #06b6d4, #3b82f6)',
-      'linear-gradient(135deg, #8b5cf6, #ec4899)',
-    ];
-    return gradients[(id - 1) % gradients.length];
+  /** Màu avatar theo ID */
+  getAvatarColor(id: number): string {
+    const colors = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#06b6d4', '#8b5cf6'];
+    return colors[(id - 1) % colors.length];
+  }
+
+  /** Đếm nhân viên đang active */
+  getActiveCount(): number {
+    return this.danhSach.filter(nv => nv.trang_thai === 'active').length;
   }
 }
