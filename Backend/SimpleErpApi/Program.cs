@@ -1,14 +1,12 @@
 // ==========================================
 // ERP SYSTEM — C# API (.NET Minimal API)
 // ==========================================
-// Chạy: cd d:\Thuctap\ThucTap_HocViec\Backend\SimpleErpApi
-//        dotnet run
-// API:   http://localhost:5000
-// Docs:  http://localhost:5000/swagger (nếu có OpenApi)
-// ==========================================
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,14 +40,13 @@ app.UseCors("AllowAngular");
 // ==========================================
 var db = new List<NhanVien>
 {
-    new(1, "Nguyễn Tất Thắng", "Backend Developer",  "thang.nt@erp.vn", "active"),
-    new(2, "Bảo Hân Nguyễn",   "AI Engineer",        "han.nb@erp.vn",   "active"),
-    new(3, "Trần Văn C",        "Intern",             "c.tv@erp.vn",     "busy"),
-    new(4, "Lê Thị D",          "Frontend Developer", "d.lt@erp.vn",     "active"),
-    new(5, "Phạm Minh E",       "Backend Developer",  "e.pm@erp.vn",     "offline"),
-    new(6, "Hoàng Văn F",       "DevOps Engineer",    "f.hv@erp.vn",     "active"),
+    new(1, "NV-2024-001", "Nguyễn Tất Thắng", "IT", "Backend Developer", "thang.nt@erp.vn", "0901234567", new DateTime(2023, 1, 15), "active"),
+    new(2, "NV-2024-002", "Bảo Hân Nguyễn", "IT", "AI Engineer", "han.nb@erp.vn", "0912345678", new DateTime(2023, 5, 20), "active"),
+    new(3, "NV-2024-003", "Trần Văn C", "Marketing", "Content Creator", "c.tv@erp.vn", "0923456789", new DateTime(2024, 2, 10), "busy"),
+    new(4, "NV-2024-004", "Lê Thị D", "HR", "HR Manager", "d.lt@erp.vn", "0934567890", new DateTime(2022, 10, 1), "active"),
+    new(5, "NV-2024-005", "Phạm Minh E", "Kế toán", "Accountant", "e.pm@erp.vn", "0945678901", new DateTime(2021, 6, 15), "inactive")
 };
-int nextId = 7;
+int nextId = 6;
 
 // ==========================================
 // API ENDPOINTS — CRUD
@@ -61,7 +58,7 @@ app.MapGet("/api/nhan-vien", () =>
     return Results.Ok(new ApiResponse<List<NhanVien>>(
         Success: true,
         Data: db,
-        Message: $"Lấy danh sách thành công ({db.Count} nhân viên)",
+        Message: $"Lấy danh sách thành công ({db.Count} nhân sự)",
         Errors: new List<string>()
     ));
 })
@@ -92,21 +89,25 @@ app.MapGet("/api/nhan-vien/{id}", (int id) =>
 .WithTags("Quản lý Nhân Sự")
 .Produces<ApiResponse<NhanVien>>(200);
 
-// ===== POST: Thêm nhân viên mới =====
+// ===== POST: Thêm nhân viên mới (Onboarding) =====
 app.MapPost("/api/nhan-vien", (NhanVienDto body) =>
 {
-    // Validate dữ liệu
     var errors = new List<string>();
-    if (string.IsNullOrWhiteSpace(body.Ten))
-        errors.Add("Tên không được để trống");
-    if (string.IsNullOrWhiteSpace(body.Email))
-        errors.Add("Email không được để trống");
-    else if (!body.Email.Contains("@"))
-        errors.Add("Email không hợp lệ (thiếu @)");
+    
+    // Validate dữ liệu bắt buộc
+    if (string.IsNullOrWhiteSpace(body.EmployeeCode)) errors.Add("Mã nhân viên không được để trống");
+    if (string.IsNullOrWhiteSpace(body.FullName)) errors.Add("Họ tên không được để trống");
+    if (string.IsNullOrWhiteSpace(body.Email)) errors.Add("Email không được để trống");
+    else if (!body.Email.Contains("@")) errors.Add("Email không hợp lệ");
+    if (string.IsNullOrWhiteSpace(body.Department)) errors.Add("Phòng ban không được để trống");
+    if (string.IsNullOrWhiteSpace(body.Role)) errors.Add("Chức vụ không được để trống");
 
-    // Kiểm tra email trùng
-    if (db.Any(x => x.Email == body.Email))
-        errors.Add($"Email '{body.Email}' đã tồn tại");
+    // Kiểm tra trùng lặp
+    if (db.Any(x => x.EmployeeCode.Equals(body.EmployeeCode, StringComparison.OrdinalIgnoreCase)))
+        errors.Add($"Mã nhân viên '{body.EmployeeCode}' đã tồn tại trong hệ thống");
+    
+    if (db.Any(x => x.Email.Equals(body.Email, StringComparison.OrdinalIgnoreCase)))
+        errors.Add($"Email '{body.Email}' đã được sử dụng");
 
     if (errors.Count > 0)
     {
@@ -118,12 +119,15 @@ app.MapPost("/api/nhan-vien", (NhanVienDto body) =>
         ));
     }
 
-    // Tạo nhân viên mới
     var newNv = new NhanVien(
         nextId++,
-        body.Ten.Trim(),
+        body.EmployeeCode.Trim(),
+        body.FullName.Trim(),
+        body.Department.Trim(),
         body.Role.Trim(),
         body.Email.Trim(),
+        body.Phone?.Trim() ?? "",
+        body.JoinDate ?? DateTime.UtcNow,
         body.Trang_thai ?? "active"
     );
     db.Add(newNv);
@@ -131,14 +135,14 @@ app.MapPost("/api/nhan-vien", (NhanVienDto body) =>
     return Results.Ok(new ApiResponse<NhanVien>(
         Success: true,
         Data: newNv,
-        Message: $"Thêm nhân viên '{newNv.Ten}' thành công",
+        Message: $"Đã tiếp nhận nhân sự '{newNv.FullName}' thành công",
         Errors: new List<string>()
     ));
 })
 .WithTags("Quản lý Nhân Sự")
 .Produces<ApiResponse<NhanVien>>(200);
 
-// ===== PUT: Cập nhật nhân viên =====
+// ===== PUT: Cập nhật nhân viên (Promotion & Transfer) =====
 app.MapPut("/api/nhan-vien/{id}", (int id, NhanVienDto body) =>
 {
     var index = db.FindIndex(x => x.Id == id);
@@ -152,15 +156,19 @@ app.MapPut("/api/nhan-vien/{id}", (int id, NhanVienDto body) =>
         ));
     }
 
-    // Validate
     var errors = new List<string>();
-    if (string.IsNullOrWhiteSpace(body.Ten))
-        errors.Add("Tên không được để trống");
-    if (!string.IsNullOrEmpty(body.Email) && !body.Email.Contains("@"))
-        errors.Add("Email không hợp lệ");
+    
+    // Validate dữ liệu bắt buộc
+    if (string.IsNullOrWhiteSpace(body.EmployeeCode)) errors.Add("Mã nhân viên không được để trống");
+    if (string.IsNullOrWhiteSpace(body.FullName)) errors.Add("Họ tên không được để trống");
+    if (string.IsNullOrWhiteSpace(body.Email)) errors.Add("Email không được để trống");
+    else if (!body.Email.Contains("@")) errors.Add("Email không hợp lệ");
 
-    // Kiểm tra email trùng (trừ chính mình)
-    if (db.Any(x => x.Email == body.Email && x.Id != id))
+    // Kiểm tra trùng lặp (ngoại trừ chính nhân viên đang sửa)
+    if (db.Any(x => x.EmployeeCode.Equals(body.EmployeeCode, StringComparison.OrdinalIgnoreCase) && x.Id != id))
+        errors.Add($"Mã nhân viên '{body.EmployeeCode}' đã được sử dụng bởi người khác");
+        
+    if (db.Any(x => x.Email.Equals(body.Email, StringComparison.OrdinalIgnoreCase) && x.Id != id))
         errors.Add($"Email '{body.Email}' đã được sử dụng bởi người khác");
 
     if (errors.Count > 0)
@@ -173,31 +181,34 @@ app.MapPut("/api/nhan-vien/{id}", (int id, NhanVienDto body) =>
         ));
     }
 
-    // Cập nhật (record là immutable → tạo mới)
     var updated = new NhanVien(
         id,
-        body.Ten.Trim(),
+        body.EmployeeCode.Trim(),
+        body.FullName.Trim(),
+        body.Department.Trim(),
         body.Role.Trim(),
         body.Email.Trim(),
-        body.Trang_thai ?? "active"
+        body.Phone?.Trim() ?? "",
+        body.JoinDate ?? db[index].JoinDate, // Giữ nguyên ngày cũ nếu không truyền
+        body.Trang_thai ?? db[index].Trang_thai
     );
     db[index] = updated;
 
     return Results.Ok(new ApiResponse<NhanVien>(
         Success: true,
         Data: updated,
-        Message: $"Cập nhật nhân viên '{updated.Ten}' thành công",
+        Message: $"Cập nhật hồ sơ '{updated.FullName}' thành công",
         Errors: new List<string>()
     ));
 })
 .WithTags("Quản lý Nhân Sự")
 .Produces<ApiResponse<NhanVien>>(200);
 
-// ===== DELETE: Xóa nhân viên =====
+// ===== DELETE: Xóa nhân viên (Soft Delete / Offboarding) =====
 app.MapDelete("/api/nhan-vien/{id}", (int id) =>
 {
-    var nv = db.FirstOrDefault(x => x.Id == id);
-    if (nv is null)
+    var index = db.FindIndex(x => x.Id == id);
+    if (index == -1)
     {
         return Results.Ok(new ApiResponse<NhanVien?>(
             Success: false,
@@ -207,12 +218,16 @@ app.MapDelete("/api/nhan-vien/{id}", (int id) =>
         ));
     }
 
-    db.Remove(nv);
+    var nv = db[index];
+    
+    // SOFT DELETE: Thay vì Remove, chúng ta đổi trạng thái thành inactive
+    var offboarded = nv with { Trang_thai = "inactive" };
+    db[index] = offboarded;
 
     return Results.Ok(new ApiResponse<NhanVien>(
         Success: true,
-        Data: nv,
-        Message: $"Xóa nhân viên '{nv.Ten}' thành công",
+        Data: offboarded,
+        Message: $"Đã cho nhân sự '{offboarded.FullName}' nghỉ việc thành công",
         Errors: new List<string>()
     ));
 })
@@ -234,19 +249,27 @@ app.Run("http://localhost:5000");
 // MODELS — Record (kiểu dữ liệu)
 // ==========================================
 
-/// <summary>
-/// Nhân viên — dữ liệu đầy đủ (trả về từ API)
-/// </summary>
-public record NhanVien(int Id, string Ten, string Role, string Email, string Trang_thai);
+public record NhanVien(
+    int Id, 
+    string EmployeeCode, 
+    string FullName, 
+    string Department, 
+    string Role, 
+    string Email, 
+    string Phone,
+    DateTime JoinDate,
+    string Trang_thai
+);
 
-/// <summary>
-/// DTO — dữ liệu gửi lên khi tạo/sửa (không có Id)
-/// </summary>
-public record NhanVienDto(string Ten, string Role, string Email, string? Trang_thai);
+public record NhanVienDto(
+    string EmployeeCode, 
+    string FullName, 
+    string Department, 
+    string Role, 
+    string Email, 
+    string Phone,
+    DateTime? JoinDate,
+    string? Trang_thai
+);
 
-/// <summary>
-/// API Response chuẩn — Generic
-/// Thành công: { Success: true,  Data: [...], Message: "OK", Errors: [] }
-/// Lỗi:       { Success: false, Data: null,  Message: "Lỗi", Errors: ["..."] }
-/// </summary>
 public record ApiResponse<T>(bool Success, T? Data, string Message, List<string> Errors);
