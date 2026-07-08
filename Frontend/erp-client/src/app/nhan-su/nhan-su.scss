@@ -1,8 +1,8 @@
-/* ===== NHÂN SỰ PAGE — Light Theme ===== */
+/* ===== NHÂN SỰ PAGE (HRM) — Light Theme + NG-ZORRO ===== */
 
 .page {
   padding: 24px 32px;
-  max-width: 1100px;
+  max-width: 1200px; /* Tăng max-width để chứa nhiều cột hơn */
   margin: 0 auto;
   animation: fadeIn 0.4s ease;
 }
@@ -13,7 +13,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 .page-title {
@@ -23,38 +23,9 @@
   margin-bottom: 2px;
 }
 .page-sub {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
 }
-
-/* BUTTONS */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 18px;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: inherit;
-}
-.btn-primary {
-  background: var(--primary-500);
-  color: white;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
-}
-.btn-primary:hover { background: var(--primary-600); transform: translateY(-1px); }
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-}
-.btn-ghost:hover { background: var(--bg-input); }
-.btn-danger { background: var(--accent-rose); color: white; }
-.btn-danger:hover { background: #e11d48; }
 
 /* ALERTS */
 .alert {
@@ -67,40 +38,12 @@
   font-size: 13px;
   animation: fadeInUp 0.3s ease;
 }
-.alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-.alert-close {
-  margin-left: auto;
-  background: none; border: none;
-  cursor: pointer; font-size: 16px;
-  color: inherit; opacity: 0.5;
-  padding: 0 4px;
-}
-.alert-close:hover { opacity: 1; }
-.alert-detail { margin-top: 4px; font-size: 12px; opacity: 0.8; }
 
-/* LOADING */
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 60px 20px;
-  color: var(--text-muted);
-  font-size: 14px;
-  gap: 12px;
-}
-.spinner {
-  width: 36px; height: 36px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--primary-500);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-/* STATS */
+/* STATS & FILTERS */
 .stats-row {
-  display: flex; gap: 12px;
-  margin-bottom: 20px;
+  display: flex; gap: 16px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 .stat-card {
@@ -109,12 +52,17 @@
   border-radius: var(--radius-lg);
   padding: 16px 20px;
   display: flex; flex-direction: column;
-  min-width: 140px;
+  min-width: 160px;
   box-shadow: var(--shadow-sm);
+}
+.filter-card {
+  flex-grow: 1; /* Bộ lọc chiếm phần diện tích còn lại */
+  align-items: flex-start;
+  justify-content: center;
 }
 .stat-num { font-size: 28px; font-weight: 800; color: var(--primary-600); line-height: 1; }
 .stat-green { color: var(--accent-emerald); }
-.stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
 
 /* TABLE CARD */
 .table-card {
@@ -126,174 +74,67 @@
 }
 .table-top {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--border-light);
 }
-.table-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.table-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0; }
 
-/* EMPTY */
-.empty {
-  padding: 48px 20px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 14px;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-}
+/* Bỏ các class custom cũ (.data-table) vì đã dùng nz-table */
 
-/* DATA TABLE */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.data-table th {
-  text-align: left;
-  padding: 10px 16px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: var(--bg-input);
-  border-bottom: 1px solid var(--border-color);
-}
-.data-table td {
-  padding: 12px 16px;
-  font-size: 13px;
-  border-bottom: 1px solid var(--border-light);
-  vertical-align: middle;
-}
-.data-table tr:hover { background: #fafbff; }
-.data-table tr:last-child td { border-bottom: none; }
-
-/* User cell */
-.user-cell { display: flex; align-items: center; gap: 10px; }
+/* User cell trong nz-table */
+.user-cell { display: flex; align-items: center; gap: 12px; }
 .avatar {
-  width: 34px; height: 34px;
+  width: 40px; height: 40px;
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: white;
+  font-size: 14px; font-weight: 700; color: white;
   flex-shrink: 0;
 }
-.user-name { font-weight: 600; color: var(--text-primary); }
+.user-name { font-weight: 600; color: var(--text-primary); font-size: 14px; }
 .text-muted { color: var(--text-muted); }
-.text-sm { font-size: 12px; }
+.text-sm { font-size: 13px; }
 
-/* Role Tag */
-.role-tag {
-  display: inline-block;
-  font-size: 11px; font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 6px;
-  background: var(--primary-50);
-  color: var(--primary-600);
+/* ===== NG-ZORRO OVERRIDES ===== */
+
+/* nz-spin: Điều chỉnh vùng loading */
+::ng-deep .ant-spin-nested-loading > div > .ant-spin {
+  max-height: none;
 }
 
-/* Status Badge */
-.status-badge {
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.status-active { color: var(--accent-emerald); }
-.status-busy { color: var(--accent-amber); }
-.status-offline { color: var(--text-muted); }
-
-/* Action Buttons */
-.action-btns { display: flex; gap: 4px; }
-.btn-icon {
-  width: 32px; height: 32px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background: white;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  transition: all var(--transition-fast);
-}
-.btn-edit:hover { background: #eef2ff; border-color: var(--primary-300); }
-.btn-delete:hover { background: #fef2f2; border-color: #fca5a5; }
-
-/* Mobile Cards (hidden on desktop) */
-.mobile-cards { display: none; }
-.mobile-card {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-light);
-}
-.mobile-card:last-child { border-bottom: none; }
-.mobile-card-top {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
-}
-.mobile-card-bottom {
-  display: flex; align-items: center; justify-content: space-between;
+/* nz-tag: Điều chỉnh kích thước tag */
+nz-tag {
+  font-size: 12px !important;
 }
 
-/* ===== MODAL ===== */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.3);
-  backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1000;
-  padding: 16px;
-  animation: fadeIn 0.2s ease;
+/* nz-modal: Form bên trong modal */
+::ng-deep .ant-modal-body {
+  padding: 24px;
 }
-.modal {
-  background: white;
-  border-radius: var(--radius-xl);
+
+/* nz-form: Spacing giữa các form item */
+::ng-deep .ant-form-item {
+  margin-bottom: 16px;
+}
+
+/* nz-select & nz-date-picker: Chiều rộng đầy đủ */
+::ng-deep nz-select,
+::ng-deep nz-date-picker {
   width: 100%;
-  max-width: 480px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-  animation: fadeInUp 0.3s ease;
-  max-height: 90vh;
-  overflow-y: auto;
 }
-.modal-sm { max-width: 360px; }
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 20px 0;
-}
-.modal-header h3 { font-size: 17px; font-weight: 700; }
-.modal-close {
-  width: 30px; height: 30px;
-  border: none; border-radius: 8px;
+
+/* Override nz-table header padding */
+::ng-deep .ant-table-thead > tr > th {
   background: var(--bg-input);
-  cursor: pointer; font-size: 16px;
   color: var(--text-muted);
-  display: flex; align-items: center; justify-content: center;
-}
-.modal-close:hover { background: var(--border-color); }
-.modal-body { padding: 20px; }
-.modal-actions {
-  display: flex; justify-content: flex-end; gap: 8px;
-  padding-top: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding: 12px 16px;
 }
 
-/* Form */
-.form-group { margin-bottom: 14px; }
-.form-group label {
-  display: block;
-  font-size: 12px; font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-}
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--text-primary);
-  background: var(--bg-input);
-  transition: border-color var(--transition-fast);
-}
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: var(--primary-400);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+::ng-deep .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+  vertical-align: middle;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -302,9 +143,5 @@
   .page-header { flex-direction: column; }
   .page-title { font-size: 20px; }
   .stats-row { flex-direction: column; }
-  .stat-card { min-width: unset; }
-
-  /* Hide table, show cards */
-  .data-table { display: none; }
-  .mobile-cards { display: block; }
+  .stat-card { min-width: unset; width: 100%; }
 }

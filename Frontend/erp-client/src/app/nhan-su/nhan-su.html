@@ -2,234 +2,253 @@
   <!-- Header -->
   <header class="page-header">
     <div>
-      <h1 class="page-title">👥 Quản lý Nhân Sự</h1>
-      <p class="page-sub">Thêm, sửa, xóa nhân viên — Dữ liệu từ API</p>
+      <h1 class="page-title">👥 Quản lý Nhân Sự (HRM)</h1>
+      <p class="page-sub">Tiếp nhận, Chuyển công tác, Cho nghỉ việc — Đồng bộ dữ liệu thực tế</p>
     </div>
-    <button class="btn btn-primary" (click)="openCreateForm()">
-      ＋ Thêm nhân viên
+    <!-- Nút Onboarding -->
+    <button nz-button nzType="primary" nzSize="large" (click)="openCreateForm()">
+      ＋ Tiếp nhận nhân sự
     </button>
   </header>
 
-  <!-- Success Message -->
-  @if (successMessage) {
-    <div class="alert alert-success">
-      <span>✅</span>
-      <span>{{ successMessage }}</span>
-      <button class="alert-close" (click)="successMessage = ''">✕</button>
-    </div>
-  }
+  <nz-spin [nzSpinning]="isLoading()" nzTip="Đang tải dữ liệu nhân sự...">
 
-  <!-- Error Message -->
-  @if (errorMessage) {
-    <div class="alert alert-error">
-      <span>❌</span>
-      <div>
-        <strong>{{ errorMessage }}</strong>
-        @for (err of formErrors; track err) {
-          <p class="alert-detail">• {{ err }}</p>
-        }
-      </div>
-      <button class="alert-close" (click)="clearMessages()">✕</button>
-    </div>
-  }
-
-  <!-- Loading -->
-  @if (isLoading) {
-    <div class="loading">
-      <div class="spinner"></div>
-      <p>Đang tải dữ liệu từ API...</p>
-    </div>
-  } @else {
-    <!-- Stats -->
+    <!-- Thống kê -->
     <div class="stats-row">
       <div class="stat-card">
-        <span class="stat-num">{{ danhSach.length }}</span>
-        <span class="stat-label">Tổng nhân sự</span>
+        <span class="stat-num">{{ totalCount() }}</span>
+        <span class="stat-label">Tổng nhân sự (Bộ lọc)</span>
       </div>
       <div class="stat-card">
-        <span class="stat-num stat-green">{{ getActiveCount() }}</span>
-        <span class="stat-label">Đang hoạt động</span>
+        <span class="stat-num stat-green">{{ activeCount() }}</span>
+        <span class="stat-label">Đang làm việc (Active)</span>
+      </div>
+      
+      <!-- Bộ lọc phòng ban -->
+      <div class="stat-card filter-card">
+        <span class="stat-label" style="margin-bottom: 8px;">Lọc theo phòng ban:</span>
+        <nz-select [ngModel]="selectedDepartment()" (ngModelChange)="onDepartmentFilterChange($event)" style="width: 200px;">
+          <nz-option nzValue="All" nzLabel="Tất cả phòng ban"></nz-option>
+          <nz-option nzValue="IT" nzLabel="IT"></nz-option>
+          <nz-option nzValue="HR" nzLabel="HR (Nhân sự)"></nz-option>
+          <nz-option nzValue="Marketing" nzLabel="Marketing"></nz-option>
+          <nz-option nzValue="Kế toán" nzLabel="Kế toán"></nz-option>
+        </nz-select>
       </div>
     </div>
 
-    <!-- Table -->
+    <!-- Bảng danh sách nhân sự (Employee Directory) bằng nz-table -->
     <div class="table-card">
       <div class="table-top">
-        <h2 class="table-title">Danh sách nhân viên</h2>
-        <button class="btn btn-ghost" (click)="loadData()">🔄 Tải lại</button>
+        <h2 class="table-title">Danh sách nhân sự (Employee Directory)</h2>
+        <button nz-button nzType="default" (click)="loadData()">🔄 Tải lại</button>
       </div>
 
-      @if (danhSach.length === 0) {
-        <div class="empty">
-          <p>📭 Chưa có nhân viên nào</p>
-          <button class="btn btn-primary" (click)="openCreateForm()">Thêm nhân viên đầu tiên</button>
-        </div>
-      } @else {
-        <!-- Desktop Table -->
-        <table class="data-table">
-          <thead>
+      <nz-table #basicTable [nzData]="filteredDanhSach()" [nzPageSize]="5" [nzShowPagination]="true">
+        <thead>
+          <tr>
+            <th>Mã NV</th>
+            <th>Nhân viên</th>
+            <th>Liên hệ</th>
+            <th>Phòng ban</th>
+            <th>Trạng thái</th>
+            <th>Ngày vào làm</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dùng data từ nz-table (đã được pagination) thay vì vòng lặp @for gốc -->
+          @for (nv of basicTable.data; track nv.id) {
             <tr>
-              <th>Nhân viên</th>
-              <th>Vai trò</th>
-              <th>Email</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (nv of danhSach; track nv.id) {
-              <tr>
-                <td>
-                  <div class="user-cell">
-                    <div class="avatar" [style.background]="getAvatarColor(nv.id)">
-                      {{ getInitials(nv.ten) }}
-                    </div>
-                    <span class="user-name">{{ nv.ten }}</span>
-                  </div>
-                </td>
-                <td><span class="role-tag">{{ nv.role }}</span></td>
-                <td class="text-muted">{{ nv.email }}</td>
-                <td>
-                  <span class="status-badge"
-                    [class.status-active]="nv.trang_thai === 'active'"
-                    [class.status-busy]="nv.trang_thai === 'busy'"
-                    [class.status-offline]="nv.trang_thai === 'offline'">
-                    @switch (nv.trang_thai) {
-                      @case ('active') { ● Online }
-                      @case ('busy') { ● Bận }
-                      @default { ● Offline }
-                    }
-                  </span>
-                </td>
-                <td>
-                  <div class="action-btns">
-                    <button class="btn-icon btn-edit" (click)="openEditForm(nv)" title="Sửa">✏️</button>
-                    <button class="btn-icon btn-delete" (click)="confirmDelete(nv)" title="Xóa">🗑️</button>
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-
-        <!-- Mobile Cards -->
-        <div class="mobile-cards">
-          @for (nv of danhSach; track nv.id) {
-            <div class="mobile-card">
-              <div class="mobile-card-top">
+              <!-- Mã NV -->
+              <td style="font-weight: 500;">{{ nv.employeeCode }}</td>
+              
+              <!-- Tên & Avatar -->
+              <td>
                 <div class="user-cell">
                   <div class="avatar" [style.background]="getAvatarColor(nv.id)">
-                    {{ getInitials(nv.ten) }}
+                    {{ getInitials(nv.fullName) }}
                   </div>
                   <div>
-                    <div class="user-name">{{ nv.ten }}</div>
-                    <div class="text-muted text-sm">{{ nv.email }}</div>
+                    <div class="user-name">{{ nv.fullName }}</div>
+                    <div class="text-sm text-muted">{{ nv.role }}</div>
                   </div>
                 </div>
-                <span class="status-badge"
-                  [class.status-active]="nv.trang_thai === 'active'"
-                  [class.status-busy]="nv.trang_thai === 'busy'"
-                  [class.status-offline]="nv.trang_thai === 'offline'">
-                  @switch (nv.trang_thai) {
-                    @case ('active') { ● Online }
-                    @case ('busy') { ● Bận }
-                    @default { ● Offline }
-                  }
-                </span>
-              </div>
-              <div class="mobile-card-bottom">
-                <span class="role-tag">{{ nv.role }}</span>
-                <div class="action-btns">
-                  <button class="btn-icon btn-edit" (click)="openEditForm(nv)">✏️</button>
-                  <button class="btn-icon btn-delete" (click)="confirmDelete(nv)">🗑️</button>
-                </div>
-              </div>
-            </div>
+              </td>
+              
+              <!-- Liên hệ -->
+              <td>
+                <div>{{ nv.email }}</div>
+                <div class="text-sm text-muted">{{ nv.phone || 'Chưa cập nhật' }}</div>
+              </td>
+              
+              <!-- Phòng ban -->
+              <td>
+                <nz-tag [nzColor]="'magenta'">{{ nv.department }}</nz-tag>
+              </td>
+
+              <!-- Trạng thái -->
+              <td>
+                @switch (nv.trang_thai) {
+                  @case ('active') { <nz-tag nzColor="success">● Đang làm việc</nz-tag> }
+                  @case ('busy') { <nz-tag nzColor="warning">● Tạm nghỉ/Công tác</nz-tag> }
+                  @case ('inactive') { <nz-tag nzColor="default">● Đã nghỉ việc</nz-tag> }
+                }
+              </td>
+              
+              <!-- Ngày vào làm -->
+              <td>{{ nv.joinDate | date:'dd/MM/yyyy' }}</td>
+              
+              <!-- Thao tác -->
+              <td>
+                <nz-space>
+                  <!-- Nút Sửa -->
+                  <button *nzSpaceItem nz-button nzType="default" nzShape="circle" (click)="openEditForm(nv)" title="Sửa hồ sơ">
+                    ✏️
+                  </button>
+                  
+                  <!-- Nút Xóa (Soft Delete) -->
+                  <button *nzSpaceItem nz-button nzType="text" nzDanger nzShape="circle"
+                    nz-popconfirm
+                    [nzPopconfirmTitle]="'Bạn có chắc chắn muốn vô hiệu hóa nhân sự này không? (Hồ sơ sẽ được chuyển sang trạng thái Đã nghỉ việc)'"
+                    nzOkText="Nghỉ việc"
+                    nzCancelText="Hủy"
+                    nzOkDanger
+                    (nzOnConfirm)="onDelete(nv)"
+                    title="Cho nghỉ việc">
+                    🗑️
+                  </button>
+                </nz-space>
+              </td>
+            </tr>
           }
+        </tbody>
+      </nz-table>
+    </div>
+
+  </nz-spin>
+
+  <!-- ==================== FORM MODAL (Onboarding / Promotion) ==================== -->
+  <nz-modal
+    [nzVisible]="showForm()"
+    [nzTitle]="isEditing() ? '✏️ Cập nhật Hồ sơ nhân sự' : '➕ Tiếp nhận Nhân sự mới (Onboarding)'"
+    (nzOnCancel)="closeForm()"
+    (nzOnOk)="onSubmit()"
+    [nzOkText]="isEditing() ? 'Lưu cập nhật' : 'Tiếp nhận'"
+    nzCancelText="Hủy"
+    [nzWidth]="720">
+
+    <ng-container *nzModalContent>
+      <!-- Lỗi từ backend -->
+      @if (formErrors().length > 0) {
+        <div class="alert alert-error" style="margin-bottom: 16px;">
+          <span>⚠️</span>
+          <div>
+            @for (err of formErrors(); track err) {
+              <p>• {{ err }}</p>
+            }
+          </div>
         </div>
       }
-    </div>
-  }
 
-  <!-- ==================== FORM MODAL ==================== -->
-  @if (showForm) {
-    <div class="modal-overlay" (click)="closeForm()">
-      <div class="modal" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>{{ isEditing ? '✏️ Sửa nhân viên' : '➕ Thêm nhân viên mới' }}</h3>
-          <button class="modal-close" (click)="closeForm()">✕</button>
+      <form nz-form [formGroup]="nhanVienForm" nzLayout="vertical">
+        <div nz-row [nzGutter]="16">
+          
+          <!-- Cột 1 -->
+          <div nz-col nzSpan="12">
+            <nz-form-item>
+              <nz-form-label nzRequired>Mã nhân viên</nz-form-label>
+              <nz-form-control nzHasFeedback nzErrorTip="Vui lòng nhập mã NV">
+                <input nz-input formControlName="employeeCode" placeholder="vd: NV-2024-001" />
+              </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+              <nz-form-label nzRequired>Họ và tên</nz-form-label>
+              <nz-form-control nzHasFeedback [nzErrorTip]="nameErrorTpl">
+                <input nz-input formControlName="fullName" placeholder="Nhập họ và tên đầy đủ" />
+              </nz-form-control>
+              <ng-template #nameErrorTpl let-control>
+                @if (control.hasError('required')) { Bắt buộc nhập }
+                @else if (control.hasError('minlength')) { Tối thiểu 2 ký tự }
+              </ng-template>
+            </nz-form-item>
+
+            <nz-form-item>
+              <nz-form-label nzRequired>Phòng ban</nz-form-label>
+              <nz-form-control>
+                <nz-select formControlName="department">
+                  <nz-option nzValue="IT" nzLabel="IT"></nz-option>
+                  <nz-option nzValue="HR" nzLabel="HR (Nhân sự)"></nz-option>
+                  <nz-option nzValue="Marketing" nzLabel="Marketing"></nz-option>
+                  <nz-option nzValue="Kế toán" nzLabel="Kế toán"></nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+            
+            <nz-form-item>
+              <nz-form-label nzRequired>Ngày gia nhập</nz-form-label>
+              <nz-form-control nzErrorTip="Vui lòng chọn ngày">
+                <nz-date-picker formControlName="joinDate" style="width: 100%;" nzFormat="dd/MM/yyyy"></nz-date-picker>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          
+          <!-- Cột 2 -->
+          <div nz-col nzSpan="12">
+            <nz-form-item>
+              <nz-form-label nzRequired>Email công việc</nz-form-label>
+              <nz-form-control nzHasFeedback [nzErrorTip]="emailErrorTpl">
+                <input nz-input formControlName="email" placeholder="vd: name@erp.vn" />
+              </nz-form-control>
+              <ng-template #emailErrorTpl let-control>
+                @if (control.hasError('required')) { Bắt buộc nhập }
+                @else if (control.hasError('email')) { Sai định dạng email }
+              </ng-template>
+            </nz-form-item>
+
+            <nz-form-item>
+              <nz-form-label>Số điện thoại</nz-form-label>
+              <nz-form-control nzHasFeedback [nzErrorTip]="phoneErrorTpl">
+                <input nz-input formControlName="phone" placeholder="Nhập số điện thoại" />
+              </nz-form-control>
+              <ng-template #phoneErrorTpl let-control>
+                @if (control.hasError('pattern')) { Chỉ được nhập số }
+                @else if (control.hasError('minlength') || control.hasError('maxlength')) { SĐT phải từ 10-11 số }
+              </ng-template>
+            </nz-form-item>
+
+            <nz-form-item>
+              <nz-form-label nzRequired>Chức vụ (Role)</nz-form-label>
+              <nz-form-control>
+                <nz-select formControlName="role">
+                  <nz-option nzValue="Backend Developer" nzLabel="Backend Developer"></nz-option>
+                  <nz-option nzValue="Frontend Developer" nzLabel="Frontend Developer"></nz-option>
+                  <nz-option nzValue="AI Engineer" nzLabel="AI Engineer"></nz-option>
+                  <nz-option nzValue="DevOps Engineer" nzLabel="DevOps Engineer"></nz-option>
+                  <nz-option nzValue="HR Manager" nzLabel="HR Manager"></nz-option>
+                  <nz-option nzValue="Accountant" nzLabel="Accountant"></nz-option>
+                  <nz-option nzValue="Content Creator" nzLabel="Content Creator"></nz-option>
+                  <nz-option nzValue="Intern" nzLabel="Intern"></nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+              <nz-form-label>Trạng thái</nz-form-label>
+              <nz-form-control>
+                <nz-select formControlName="trang_thai">
+                  <nz-option nzValue="active" nzLabel="🟢 Đang làm việc (Active)"></nz-option>
+                  <nz-option nzValue="busy" nzLabel="🟡 Tạm nghỉ/Công tác"></nz-option>
+                  <nz-option nzValue="inactive" nzLabel="⚪ Đã nghỉ việc"></nz-option>
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+
         </div>
+      </form>
+    </ng-container>
+  </nz-modal>
 
-        <!-- Form Errors -->
-        @if (formErrors.length > 0) {
-          <div class="alert alert-error" style="margin: 0 20px;">
-            <span>⚠️</span>
-            <div>
-              @for (err of formErrors; track err) {
-                <p>• {{ err }}</p>
-              }
-            </div>
-          </div>
-        }
-
-        <form class="modal-body" (ngSubmit)="onSubmit()">
-          <div class="form-group">
-            <label for="ten">Họ và tên *</label>
-            <input id="ten" type="text" [(ngModel)]="formData.ten" name="ten"
-              placeholder="Nhập họ và tên" required>
-          </div>
-
-          <div class="form-group">
-            <label for="email">Email *</label>
-            <input id="email" type="email" [(ngModel)]="formData.email" name="email"
-              placeholder="vd: abc@erp.vn" required>
-          </div>
-
-          <div class="form-group">
-            <label for="role">Vai trò</label>
-            <select id="role" [(ngModel)]="formData.role" name="role">
-              <option value="Backend Developer">Backend Developer</option>
-              <option value="Frontend Developer">Frontend Developer</option>
-              <option value="AI Engineer">AI Engineer</option>
-              <option value="DevOps Engineer">DevOps Engineer</option>
-              <option value="Intern">Intern</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="trangThai">Trạng thái</label>
-            <select id="trangThai" [(ngModel)]="formData.trang_thai" name="trang_thai">
-              <option value="active">🟢 Online</option>
-              <option value="busy">🟡 Bận</option>
-              <option value="offline">⚪ Offline</option>
-            </select>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" class="btn btn-ghost" (click)="closeForm()">Hủy</button>
-            <button type="submit" class="btn btn-primary">
-              {{ isEditing ? 'Cập nhật' : 'Thêm mới' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  }
-
-  <!-- ==================== DELETE CONFIRM ==================== -->
-  @if (deletingNv) {
-    <div class="modal-overlay" (click)="cancelDelete()">
-      <div class="modal modal-sm" (click)="$event.stopPropagation()">
-        <div class="modal-body" style="text-align: center; padding: 28px;">
-          <p style="font-size: 36px; margin-bottom: 12px;">🗑️</p>
-          <h3 style="margin-bottom: 6px;">Xác nhận xóa?</h3>
-          <p class="text-muted">Bạn có chắc muốn xóa <strong>{{ deletingNv.ten }}</strong>?</p>
-          <div class="modal-actions" style="margin-top: 20px;">
-            <button class="btn btn-ghost" (click)="cancelDelete()">Hủy</button>
-            <button class="btn btn-danger" (click)="onDelete(deletingNv)">Xóa</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
 </div>

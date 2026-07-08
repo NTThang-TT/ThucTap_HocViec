@@ -7,10 +7,14 @@
  */
 export interface NhanVien {
   id: number;
-  ten: string;
+  employeeCode: string;
+  fullName: string;
+  department: string;
   role: string;
   email: string;
-  trang_thai: 'active' | 'busy' | 'offline';
+  phone: string;
+  joinDate: string; // ISO String từ API
+  trang_thai: 'active' | 'busy' | 'inactive';
 }
 
 /**
@@ -18,9 +22,13 @@ export interface NhanVien {
  * Không có id vì server tự tạo
  */
 export interface NhanVienDto {
-  ten: string;
+  employeeCode: string;
+  fullName: string;
+  department: string;
   role: string;
   email: string;
+  phone: string;
+  joinDate: string;
   trang_thai: string;
 }
 

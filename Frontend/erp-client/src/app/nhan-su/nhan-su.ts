@@ -1,177 +1,301 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { ReactiveFormsModule, FormGroup, FormControl, Validators, FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { NhanVienService } from '../services/nhan-vien.service';
 import { NhanVien, NhanVienDto } from '../models/nhan-vien.model';
 
 // ==========================================
-// CONTROLLER — Xử lý logic CRUD
+// NG-ZORRO (Angular Ant Design) — UI Components
+// ==========================================
+import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzSpaceModule } from 'ng-zorro-antd/space';
+
+// ==========================================
+// COMPONENT — Standalone + NG-ZORRO
 // ==========================================
 
 @Component({
   selector: 'app-nhan-su',
   standalone: true,
-  imports: [FormsModule],
+  imports: [
+    CommonModule,
+    // Angular — Forms
+    ReactiveFormsModule,
+    FormsModule,
+    // NG-ZORRO — UI Components
+    NzButtonModule,
+    NzModalModule,
+    NzFormModule,
+    NzInputModule,
+    NzSelectModule,
+    NzTagModule,
+    NzPopconfirmModule,
+    NzSpinModule,
+    NzTableModule,
+    NzDatePickerModule,
+    NzGridModule,
+    NzSpaceModule
+  ],
   templateUrl: './nhan-su.html',
   styleUrls: ['./nhan-su.scss']
 })
 export class NhanSuComponent implements OnInit {
-  // === STATE ===
-  danhSach: NhanVien[] = [];
-  isLoading = true;
-  errorMessage = '';
-  successMessage = '';
 
-  // === FORM STATE ===
-  showForm = false;
-  isEditing = false;
-  editingId: number | null = null;
+  // SIGNALS — Quản lý state reactiv
+  danhSach = signal<NhanVien[]>([]);
+  isLoading = signal(true);
+  showForm = signal(false);
+  isEditing = signal(false);
+  editingId = signal<number | null>(null);
+  formErrors = signal<string[]>([]);
+  
+  // Bộ lọc
+  selectedDepartment = signal<string>('All');
 
-  // Form data (two-way binding với [(ngModel)])
-  formData: NhanVienDto = {
-    ten: '',
-    role: 'Backend Developer',
-    email: '',
-    trang_thai: 'active'
-  };
-  formErrors: string[] = [];
+  // COMPUTED SIGNAL — Tự động tính lại khi danhSach() thay đổi
+  
+  // Lọc danh sách nhân viên: Chỉ lấy người "Active" hoặc "Busy" (chưa bị Soft Delete)
+  // Và lọc theo phòng ban (nếu chọn)
+  filteredDanhSach = computed(() => {
+    let list = this.danhSach().filter(nv => nv.trang_thai !== 'inactive');
+    
+    if (this.selectedDepartment() !== 'All') {
+      list = list.filter(nv => nv.department === this.selectedDepartment());
+    }
+    return list;
+  });
 
-  // Confirm delete
-  deletingNv: NhanVien | null = null;
+  activeCount = computed(() =>
+    this.filteredDanhSach().filter(nv => nv.trang_thai === 'active').length
+  );
+  
+  totalCount = computed(() => this.filteredDanhSach().length);
 
-  // === INJECT SERVICE ===
+  // ==========================================
+  // REACTIVE FORM với VALIDATION (Thực tế HRM)
+  // ==========================================
+  nhanVienForm = new FormGroup({
+    employeeCode: new FormControl('', [
+      Validators.required,
+    ]),
+    fullName: new FormControl('', [
+      Validators.required,
+      Validators.minLength(2)
+    ]),
+    email: new FormControl('', [
+      Validators.required,
+      Validators.email
+    ]),
+    phone: new FormControl('', [
+      Validators.pattern('^[0-9]+$'), // Chỉ nhận số
+      Validators.minLength(10),
+      Validators.maxLength(11)
+    ]),
+    department: new FormControl('IT', [
+      Validators.required
+    ]),
+    role: new FormControl('Backend Developer', [
+      Validators.required
+    ]),
+    joinDate: new FormControl<Date | null>(new Date(), [
+      Validators.required
+    ]),
+    trang_thai: new FormControl('active', [
+      Validators.required
+    ]),
+  });
+
+  // ==========================================
+  // DEPENDENCY INJECTION
+  // ==========================================
   private nhanVienService = inject(NhanVienService);
+  private message = inject(NzMessageService);
 
-  // === LIFECYCLE: Load dữ liệu khi mở trang ===
+  // ==========================================
+  // LIFECYCLE
+  // ==========================================
   ngOnInit(): void {
     this.loadData();
   }
 
-  // === CRUD METHODS ===
+  // ==========================================
+  // CRUD METHODS
+  // ==========================================
 
-  /** GET — Lấy danh sách từ API */
+  /** GET — Lấy danh sách từ API (Employee Directory) */
   loadData(): void {
-    this.isLoading = true;
-    this.clearMessages();
+    this.isLoading.set(true);
+    this.formErrors.set([]);
 
-    this.nhanVienService.getAll().subscribe(res => {
-      if (res.success) {
-        this.danhSach = res.data ?? [];
-      } else {
-        this.errorMessage = res.message;
-        this.formErrors = res.errors;
+    this.nhanVienService.getAll().subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.danhSach.set(res.data ?? []);
+        } else {
+          this.message.error(res.message);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.message.error("Lỗi kết nối tới Server. Vui lòng bật backend.");
+        this.isLoading.set(false);
       }
-      this.isLoading = false;
     });
   }
 
-  /** POST — Thêm nhân viên mới */
+  /** POST — Tiếp nhận nhân sự mới (Onboarding) */
   onCreate(): void {
-    this.clearMessages();
-    this.formErrors = [];
+    if (this.nhanVienForm.invalid) {
+      this.markFormDirty();
+      return;
+    }
+    this.formErrors.set([]);
+    const dto = this.prepareDto();
 
-    this.nhanVienService.create(this.formData).subscribe(res => {
+    this.nhanVienService.create(dto).subscribe(res => {
       if (res.success) {
-        this.successMessage = res.message;
+        this.message.success(res.message);
         this.closeForm();
         this.loadData();
       } else {
-        this.formErrors = res.errors;
+        this.formErrors.set(res.errors);
       }
     });
   }
 
-  /** PUT — Cập nhật nhân viên */
+  /** PUT — Cập nhật hồ sơ (Promotion & Transfer) */
   onUpdate(): void {
-    if (!this.editingId) return;
-    this.clearMessages();
-    this.formErrors = [];
+    const id = this.editingId();
+    if (!id) return;
+    if (this.nhanVienForm.invalid) {
+      this.markFormDirty();
+      return;
+    }
+    this.formErrors.set([]);
+    const dto = this.prepareDto();
 
-    this.nhanVienService.update(this.editingId, this.formData).subscribe(res => {
+    this.nhanVienService.update(id, dto).subscribe(res => {
       if (res.success) {
-        this.successMessage = res.message;
+        this.message.success(res.message);
         this.closeForm();
         this.loadData();
       } else {
-        this.formErrors = res.errors;
+        this.formErrors.set(res.errors);
       }
     });
   }
 
-  /** DELETE — Xóa nhân viên */
+  /** DELETE — Cho nghỉ việc (Soft Delete / Offboarding) */
   onDelete(nv: NhanVien): void {
-    this.clearMessages();
+    this.formErrors.set([]);
 
     this.nhanVienService.delete(nv.id).subscribe(res => {
       if (res.success) {
-        this.successMessage = res.message;
+        this.message.success(res.message);
         this.loadData();
       } else {
-        this.errorMessage = res.message;
+        this.message.error(res.message);
       }
-      this.deletingNv = null;
     });
   }
 
-  // === FORM HELPERS ===
+  // ==========================================
+  // FORM HELPERS
+  // ==========================================
 
   /** Mở form THÊM mới */
   openCreateForm(): void {
-    this.isEditing = false;
-    this.editingId = null;
-    this.formData = { ten: '', role: 'Backend Developer', email: '', trang_thai: 'active' };
-    this.formErrors = [];
-    this.showForm = true;
+    this.isEditing.set(false);
+    this.editingId.set(null);
+    this.nhanVienForm.reset({
+      employeeCode: '',
+      fullName: '', 
+      role: 'Backend Developer', 
+      email: '', 
+      phone: '',
+      department: 'IT',
+      joinDate: new Date(),
+      trang_thai: 'active'
+    });
+    this.formErrors.set([]);
+    this.showForm.set(true);
   }
 
   /** Mở form SỬA */
   openEditForm(nv: NhanVien): void {
-    this.isEditing = true;
-    this.editingId = nv.id;
-    this.formData = { ten: nv.ten, role: nv.role, email: nv.email, trang_thai: nv.trang_thai };
-    this.formErrors = [];
-    this.showForm = true;
+    this.isEditing.set(true);
+    this.editingId.set(nv.id);
+    this.nhanVienForm.patchValue({
+      employeeCode: nv.employeeCode,
+      fullName: nv.fullName, 
+      role: nv.role, 
+      email: nv.email, 
+      phone: nv.phone,
+      department: nv.department,
+      joinDate: nv.joinDate ? new Date(nv.joinDate) : new Date(),
+      trang_thai: nv.trang_thai
+    });
+    this.formErrors.set([]);
+    this.showForm.set(true);
   }
 
-  /** Đóng form */
   closeForm(): void {
-    this.showForm = false;
-    this.formErrors = [];
+    this.showForm.set(false);
+    this.formErrors.set([]);
+    this.nhanVienForm.reset();
   }
 
-  /** Submit form (tạo hoặc sửa) */
   onSubmit(): void {
-    this.isEditing ? this.onUpdate() : this.onCreate();
+    this.isEditing() ? this.onUpdate() : this.onCreate();
   }
 
-  /** Mở confirm xóa */
-  confirmDelete(nv: NhanVien): void {
-    this.deletingNv = nv;
+  private markFormDirty() {
+    Object.values(this.nhanVienForm.controls).forEach(control => {
+      control.markAsDirty();
+      control.updateValueAndValidity();
+    });
   }
 
-  /** Hủy xóa */
-  cancelDelete(): void {
-    this.deletingNv = null;
+  private prepareDto(): NhanVienDto {
+    const formValue = this.nhanVienForm.value;
+    return {
+      employeeCode: formValue.employeeCode ?? '',
+      fullName: formValue.fullName ?? '',
+      email: formValue.email ?? '',
+      phone: formValue.phone ?? '',
+      department: formValue.department ?? '',
+      role: formValue.role ?? '',
+      joinDate: formValue.joinDate ? formValue.joinDate.toISOString() : new Date().toISOString(),
+      trang_thai: formValue.trang_thai ?? 'active'
+    };
   }
 
-  /** Xóa messages */
-  clearMessages(): void {
-    this.errorMessage = '';
-    this.successMessage = '';
+  // ==========================================
+  // UI HELPERS
+  // ==========================================
+  
+  onDepartmentFilterChange(value: string): void {
+    this.selectedDepartment.set(value);
   }
 
-  /** Lấy chữ cái đầu tên */
   getInitials(name: string): string {
+    if (!name) return 'NV';
     return name.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase();
   }
 
-  /** Màu avatar theo ID */
   getAvatarColor(id: number): string {
     const colors = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#06b6d4', '#8b5cf6'];
     return colors[(id - 1) % colors.length];
-  }
-
-  /** Đếm nhân viên đang active */
-  getActiveCount(): number {
-    return this.danhSach.filter(nv => nv.trang_thai === 'active').length;
   }
 }
