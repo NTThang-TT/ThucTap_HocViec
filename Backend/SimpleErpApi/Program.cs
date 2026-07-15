@@ -1,20 +1,77 @@
 // ==========================================
-// ERP SYSTEM — C# API (.NET Minimal API)
+// HRM SYSTEM — C# .NET 8 Web API
+// Entity Framework Core + SQL Server
 // ==========================================
 
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using SimpleErpApi.Data;
+using SimpleErpApi.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Cấu hình Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// ==========================================
+// ĐĂNG KÝ SERVICES
+// ==========================================
 
-// Cấu hình CORS: cho phép Angular (cổng 4200) gọi API
+// Entity Framework Core — Kết nối SQL Server
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Repository Pattern
+builder.Services.AddScoped<SimpleErpApi.Repositories.IEmployeeRepository, SimpleErpApi.Repositories.EmployeeRepository>();
+
+// Controller-based API
+builder.Services.AddControllers();
+
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Hãy dán chuỗi Token của bạn vào ô dưới đây (Không cần gõ chữ Bearer)"
+    });
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? ""))
+        };
+    });
+
+// CORS: Cho phép Angular (cổng 4200) gọi API
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",
@@ -25,251 +82,128 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Kích hoạt Swagger UI
+// ==========================================
+// TỰ ĐỘNG KHỞI TẠO DATABASE TỪ SQL SCRIPT
+// ==========================================
+// Đọc file HRM_InitDB.sql và thực thi nếu bảng chưa tồn tại
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        // Đảm bảo database tồn tại (tạo nếu chưa có)
+        context.Database.EnsureCreated();
+
+        // Kiểm tra bảng Employees đã tồn tại chưa
+        var tableExists = false;
+        try
+        {
+            // Thử query bảng Employees — nếu không lỗi thì bảng đã tồn tại
+            await context.Database.ExecuteSqlRawAsync(
+                "SELECT TOP 1 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Employees'");
+            
+            // Kiểm tra có dữ liệu chưa
+            var count = await context.Employees.CountAsync();
+            tableExists = count > 0;
+        }
+        catch
+        {
+            tableExists = false;
+        }
+
+        if (!tableExists)
+        {
+            // Đọc file SQL script
+            var sqlFilePath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "HRM_InitDB.sql");
+            
+            // Thử tìm file ở thư mục gốc project trước
+            if (!File.Exists(sqlFilePath))
+            {
+                sqlFilePath = Path.Combine(Directory.GetCurrentDirectory(), "HRM_InitDB.sql");
+            }
+
+            if (File.Exists(sqlFilePath))
+            {
+                logger.LogInformation("📂 Tìm thấy file HRM_InitDB.sql, đang thực thi...");
+                
+                var sqlScript = await File.ReadAllTextAsync(sqlFilePath);
+
+                // Loại bỏ lệnh CREATE DATABASE và USE (vì EF Core đã kết nối sẵn DB)
+                // Tách script theo GO để thực thi từng batch
+                var batches = sqlScript
+                    .Split(new[] { "\r\nGO\r\n", "\nGO\n", "\r\nGO", "GO\r\n" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(batch => !string.IsNullOrWhiteSpace(batch))
+                    .Where(batch => !batch.Trim().StartsWith("CREATE DATABASE", StringComparison.OrdinalIgnoreCase))
+                    .Where(batch => !batch.Trim().StartsWith("USE ", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                foreach (var batch in batches)
+                {
+                    var cleanBatch = batch.Trim();
+                    if (!string.IsNullOrEmpty(cleanBatch))
+                    {
+                        try
+                        {
+                            await context.Database.ExecuteSqlRawAsync(cleanBatch);
+                            logger.LogInformation("✅ Thực thi batch SQL thành công");
+                        }
+                        catch (Exception ex)
+                        {
+                            // Bỏ qua lỗi nếu bảng/dữ liệu đã tồn tại
+                            logger.LogWarning("⚠️ Batch SQL bị bỏ qua: {Message}", ex.Message);
+                        }
+                    }
+                }
+
+                logger.LogInformation("🎉 Khởi tạo Database từ HRM_InitDB.sql hoàn tất!");
+            }
+            else
+            {
+                logger.LogWarning("⚠️ Không tìm thấy file HRM_InitDB.sql");
+            }
+        }
+        else
+        {
+            logger.LogInformation("✅ Database đã có dữ liệu, bỏ qua SQL Script.");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "❌ Lỗi khi khởi tạo Database");
+    }
+}
+
+// ==========================================
+// CẤU HÌNH MIDDLEWARE
+// ==========================================
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "ERP API v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "HRM API v1");
     c.RoutePrefix = "swagger";
 });
 
 app.UseCors("AllowAngular");
 
-// ==========================================
-// DATABASE GIẢ LẬP (In-Memory)
-// ==========================================
-var db = new List<NhanVien>
-{
-    new(1, "NV-2024-001", "Nguyễn Tất Thắng", "IT", "Backend Developer", "thang.nt@erp.vn", "0901234567", new DateTime(2023, 1, 15), "active"),
-    new(2, "NV-2024-002", "Bảo Hân Nguyễn", "IT", "AI Engineer", "han.nb@erp.vn", "0912345678", new DateTime(2023, 5, 20), "active"),
-    new(3, "NV-2024-003", "Trần Văn C", "Marketing", "Content Creator", "c.tv@erp.vn", "0923456789", new DateTime(2024, 2, 10), "busy"),
-    new(4, "NV-2024-004", "Lê Thị D", "HR", "HR Manager", "d.lt@erp.vn", "0934567890", new DateTime(2022, 10, 1), "active"),
-    new(5, "NV-2024-005", "Phạm Minh E", "Kế toán", "Accountant", "e.pm@erp.vn", "0945678901", new DateTime(2021, 6, 15), "inactive")
-};
-int nextId = 6;
+app.UseAuthentication();
+app.UseAuthorization();
 
-// ==========================================
-// API ENDPOINTS — CRUD
-// ==========================================
-
-// ===== GET: Lấy tất cả nhân viên =====
-app.MapGet("/api/nhan-vien", () =>
-{
-    return Results.Ok(new ApiResponse<List<NhanVien>>(
-        Success: true,
-        Data: db,
-        Message: $"Lấy danh sách thành công ({db.Count} nhân sự)",
-        Errors: new List<string>()
-    ));
-})
-.WithTags("Quản lý Nhân Sự")
-.Produces<ApiResponse<List<NhanVien>>>(200);
-
-// ===== GET: Lấy 1 nhân viên theo ID =====
-app.MapGet("/api/nhan-vien/{id}", (int id) =>
-{
-    var nv = db.FirstOrDefault(x => x.Id == id);
-    if (nv is null)
-    {
-        return Results.Ok(new ApiResponse<NhanVien?>(
-            Success: false,
-            Data: null,
-            Message: "Không tìm thấy nhân viên",
-            Errors: new List<string> { $"Nhân viên với ID={id} không tồn tại" }
-        ));
-    }
-
-    return Results.Ok(new ApiResponse<NhanVien>(
-        Success: true,
-        Data: nv,
-        Message: "Lấy thông tin thành công",
-        Errors: new List<string>()
-    ));
-})
-.WithTags("Quản lý Nhân Sự")
-.Produces<ApiResponse<NhanVien>>(200);
-
-// ===== POST: Thêm nhân viên mới (Onboarding) =====
-app.MapPost("/api/nhan-vien", (NhanVienDto body) =>
-{
-    var errors = new List<string>();
-    
-    // Validate dữ liệu bắt buộc
-    if (string.IsNullOrWhiteSpace(body.EmployeeCode)) errors.Add("Mã nhân viên không được để trống");
-    if (string.IsNullOrWhiteSpace(body.FullName)) errors.Add("Họ tên không được để trống");
-    if (string.IsNullOrWhiteSpace(body.Email)) errors.Add("Email không được để trống");
-    else if (!body.Email.Contains("@")) errors.Add("Email không hợp lệ");
-    if (string.IsNullOrWhiteSpace(body.Department)) errors.Add("Phòng ban không được để trống");
-    if (string.IsNullOrWhiteSpace(body.Role)) errors.Add("Chức vụ không được để trống");
-
-    // Kiểm tra trùng lặp
-    if (db.Any(x => x.EmployeeCode.Equals(body.EmployeeCode, StringComparison.OrdinalIgnoreCase)))
-        errors.Add($"Mã nhân viên '{body.EmployeeCode}' đã tồn tại trong hệ thống");
-    
-    if (db.Any(x => x.Email.Equals(body.Email, StringComparison.OrdinalIgnoreCase)))
-        errors.Add($"Email '{body.Email}' đã được sử dụng");
-
-    if (errors.Count > 0)
-    {
-        return Results.Ok(new ApiResponse<NhanVien?>(
-            Success: false,
-            Data: null,
-            Message: "Lỗi xác thực dữ liệu",
-            Errors: errors
-        ));
-    }
-
-    var newNv = new NhanVien(
-        nextId++,
-        body.EmployeeCode.Trim(),
-        body.FullName.Trim(),
-        body.Department.Trim(),
-        body.Role.Trim(),
-        body.Email.Trim(),
-        body.Phone?.Trim() ?? "",
-        body.JoinDate ?? DateTime.UtcNow,
-        body.Trang_thai ?? "active"
-    );
-    db.Add(newNv);
-
-    return Results.Ok(new ApiResponse<NhanVien>(
-        Success: true,
-        Data: newNv,
-        Message: $"Đã tiếp nhận nhân sự '{newNv.FullName}' thành công",
-        Errors: new List<string>()
-    ));
-})
-.WithTags("Quản lý Nhân Sự")
-.Produces<ApiResponse<NhanVien>>(200);
-
-// ===== PUT: Cập nhật nhân viên (Promotion & Transfer) =====
-app.MapPut("/api/nhan-vien/{id}", (int id, NhanVienDto body) =>
-{
-    var index = db.FindIndex(x => x.Id == id);
-    if (index == -1)
-    {
-        return Results.Ok(new ApiResponse<NhanVien?>(
-            Success: false,
-            Data: null,
-            Message: "Không tìm thấy nhân viên",
-            Errors: new List<string> { $"Nhân viên với ID={id} không tồn tại" }
-        ));
-    }
-
-    var errors = new List<string>();
-    
-    // Validate dữ liệu bắt buộc
-    if (string.IsNullOrWhiteSpace(body.EmployeeCode)) errors.Add("Mã nhân viên không được để trống");
-    if (string.IsNullOrWhiteSpace(body.FullName)) errors.Add("Họ tên không được để trống");
-    if (string.IsNullOrWhiteSpace(body.Email)) errors.Add("Email không được để trống");
-    else if (!body.Email.Contains("@")) errors.Add("Email không hợp lệ");
-
-    // Kiểm tra trùng lặp (ngoại trừ chính nhân viên đang sửa)
-    if (db.Any(x => x.EmployeeCode.Equals(body.EmployeeCode, StringComparison.OrdinalIgnoreCase) && x.Id != id))
-        errors.Add($"Mã nhân viên '{body.EmployeeCode}' đã được sử dụng bởi người khác");
-        
-    if (db.Any(x => x.Email.Equals(body.Email, StringComparison.OrdinalIgnoreCase) && x.Id != id))
-        errors.Add($"Email '{body.Email}' đã được sử dụng bởi người khác");
-
-    if (errors.Count > 0)
-    {
-        return Results.Ok(new ApiResponse<NhanVien?>(
-            Success: false,
-            Data: null,
-            Message: "Lỗi xác thực dữ liệu",
-            Errors: errors
-        ));
-    }
-
-    var updated = new NhanVien(
-        id,
-        body.EmployeeCode.Trim(),
-        body.FullName.Trim(),
-        body.Department.Trim(),
-        body.Role.Trim(),
-        body.Email.Trim(),
-        body.Phone?.Trim() ?? "",
-        body.JoinDate ?? db[index].JoinDate, // Giữ nguyên ngày cũ nếu không truyền
-        body.Trang_thai ?? db[index].Trang_thai
-    );
-    db[index] = updated;
-
-    return Results.Ok(new ApiResponse<NhanVien>(
-        Success: true,
-        Data: updated,
-        Message: $"Cập nhật hồ sơ '{updated.FullName}' thành công",
-        Errors: new List<string>()
-    ));
-})
-.WithTags("Quản lý Nhân Sự")
-.Produces<ApiResponse<NhanVien>>(200);
-
-// ===== DELETE: Xóa nhân viên (Soft Delete / Offboarding) =====
-app.MapDelete("/api/nhan-vien/{id}", (int id) =>
-{
-    var index = db.FindIndex(x => x.Id == id);
-    if (index == -1)
-    {
-        return Results.Ok(new ApiResponse<NhanVien?>(
-            Success: false,
-            Data: null,
-            Message: "Không tìm thấy nhân viên",
-            Errors: new List<string> { $"Nhân viên với ID={id} không tồn tại" }
-        ));
-    }
-
-    var nv = db[index];
-    
-    // SOFT DELETE: Thay vì Remove, chúng ta đổi trạng thái thành inactive
-    var offboarded = nv with { Trang_thai = "inactive" };
-    db[index] = offboarded;
-
-    return Results.Ok(new ApiResponse<NhanVien>(
-        Success: true,
-        Data: offboarded,
-        Message: $"Đã cho nhân sự '{offboarded.FullName}' nghỉ việc thành công",
-        Errors: new List<string>()
-    ));
-})
-.WithTags("Quản lý Nhân Sự")
-.Produces<ApiResponse<NhanVien>>(200);
+app.MapControllers();
 
 // ==========================================
 // CHẠY SERVER
 // ==========================================
 Console.WriteLine("==================================================");
-Console.WriteLine("  🚀 ERP API Server đang chạy!");
+Console.WriteLine("  🚀 HRM API Server đang chạy!");
 Console.WriteLine("  📍 URL:   http://localhost:5000");
 Console.WriteLine("  📖 Docs:  http://localhost:5000/swagger");
+Console.WriteLine("  🗄️  DB:   HR_Management_Demo (SQL Server)");
 Console.WriteLine("==================================================");
 
 app.Run("http://localhost:5000");
-
-// ==========================================
-// MODELS — Record (kiểu dữ liệu)
-// ==========================================
-
-public record NhanVien(
-    int Id, 
-    string EmployeeCode, 
-    string FullName, 
-    string Department, 
-    string Role, 
-    string Email, 
-    string Phone,
-    DateTime JoinDate,
-    string Trang_thai
-);
-
-public record NhanVienDto(
-    string EmployeeCode, 
-    string FullName, 
-    string Department, 
-    string Role, 
-    string Email, 
-    string Phone,
-    DateTime? JoinDate,
-    string? Trang_thai
-);
-
-public record ApiResponse<T>(bool Success, T? Data, string Message, List<string> Errors);
