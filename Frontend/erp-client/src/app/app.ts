@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -20,10 +20,16 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         </div>
 
         <nav class="sidebar-nav">
-          <span class="nav-label">QUẢN LÝ</span>
+          <span class="nav-label">TUẦN 5</span>
+          <a routerLink="/hr-dashboard" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon">📊</span>
+            <span>HR Dashboard</span>
+          </a>
+
+          <span class="nav-label" style="margin-top: 12px;">TUẦN TRƯỚC</span>
           <a routerLink="/nhan-su" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">👥</span>
-            <span>Nhân Sự</span>
+            <span>Nhân Sự (cũ)</span>
           </a>
           <a class="nav-item disabled">
             <span class="nav-icon">📁</span>
@@ -45,6 +51,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               <span class="user-role">Quản trị viên</span>
             </div>
           </div>
+          <button class="logout-btn" (click)="onLogout()">🚪 Đăng xuất</button>
         </div>
       </aside>
 
@@ -139,6 +146,25 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
     .user-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
     .user-role { font-size: 10px; color: var(--text-muted); }
 
+    .logout-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .logout-btn:hover {
+      background: #fef2f2;
+      color: #ef4444;
+      border-color: #fecaca;
+    }
+
     /* Main */
     .main-content { flex: 1; margin-left: 240px; min-height: 100vh; }
 
@@ -164,4 +190,11 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
     }
   `]
 })
-export class AppComponent { }
+export class AppComponent {
+  private router = inject(Router);
+
+  onLogout(): void {
+    localStorage.removeItem('token');
+    this.router.navigateByUrl('/login');
+  }
+}
