@@ -1,5 +1,8 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+// Reusable Component — Search Bar (Tuần 10 tích hợp)
+import { SearchBarComponent } from '../shared/search-bar/search-bar';
 import { Router, RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 
@@ -23,7 +26,7 @@ import { AuthService } from '../services/auth.service';
 @Component({
   selector: 'app-hr-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, SearchBarComponent],
   template: `
     <div class="min-h-screen bg-slate-50/50 relative">
       
@@ -44,7 +47,6 @@ import { AuthService } from '../services/auth.service';
             <!-- Navigation Links -->
             <nav class="hidden md:flex items-center gap-2 border-l border-slate-200 pl-6">
               <a routerLink="/hr-dashboard" class="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg transition-colors">👥 Nhân sự</a>
-              <a routerLink="/student-dashboard" class="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg transition-colors">🎓 Học viên</a>
             </nav>
           </div>
           
@@ -151,7 +153,14 @@ import { AuthService } from '../services/auth.service';
           <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h3 class="text-lg font-bold text-slate-800">Danh sách nhân viên</h3>
-              <p class="text-sm text-slate-500 mt-1">Directory dữ liệu trực tiếp từ SQL Server</p>
+              <p class="text-sm text-slate-500 mt-1">
+                @if (searchTerm()) {
+                  Tìm thấy <strong class="text-indigo-600">{{ filteredEmployees().length }}</strong> / {{ totalCount() }} nhân viên
+                  với từ khóa "<span class="font-semibold text-slate-700">{{ searchTerm() }}</span>"
+                } @else {
+                  Tổng cộng <strong class="text-indigo-600">{{ filteredEmployees().length }}</strong> nhân viên
+                }
+              </p>
             </div>
             
             <div class="flex items-center gap-3 w-full sm:w-auto">
@@ -171,11 +180,11 @@ import { AuthService } from '../services/auth.service';
                 </div>
               </div>
 
-              <!-- Search -->
-              <div class="relative w-full sm:w-64">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
-                <input type="text" placeholder="Tìm kiếm nhân viên..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm">
-              </div>
+              <!-- Reusable Search Bar (Tuần 10) -->
+              <app-search-bar
+                placeholder="Tìm kiếm nhân viên..."
+                (searchQuery)="onSearch($event)">
+              </app-search-bar>
               
               <button (click)="loadData()" class="p-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-sm" title="Tải lại dữ liệu">
                 🔄
@@ -464,6 +473,9 @@ export class HrDashboardComponent implements OnInit {
 
   selectedDepartment = signal<string>('all');
 
+  /** Từ khóa tìm kiếm (Tuần 10 — Signal-based search) */
+  searchTerm = signal<string>('');
+
   // Lookup data for Select dropdowns
   departments = signal<Department[]>([]);
   positions = signal<Position[]>([]);
@@ -475,11 +487,37 @@ export class HrDashboardComponent implements OnInit {
   formError = signal('');
   todayDateStr = new Date().toISOString().split('T')[0];
 
+  /**
+   * filteredEmployees — Signal computed()
+   *
+   * Tự động tính lại mỗi khi employees(), selectedDepartment(), hoặc searchTerm() thay đổi.
+   * Kết hợp filter theo phòng ban + tìm kiếm theo tên/email/phòng ban.
+   *
+   * Ưu điểm (Tuần 10):
+   *   - Reactive tự động (Signal-based)
+   *   - Không cần custom Pipe
+   *   - Dễ debug và test
+   */
   filteredEmployees = computed(() => {
-    const empList = this.employees();
+    let list = this.employees();
     const dept = this.selectedDepartment();
-    if (dept === 'all') return empList;
-    return empList.filter(e => e.departmentName === dept);
+    const term = this.searchTerm().toLowerCase().trim();
+
+    // Lọc theo phòng ban
+    if (dept !== 'all') {
+      list = list.filter(e => e.departmentName === dept);
+    }
+
+    // Lọc theo từ khóa tìm kiếm (tên, email, phòng ban)
+    if (term) {
+      list = list.filter(e =>
+        e.fullName.toLowerCase().includes(term) ||
+        e.email.toLowerCase().includes(term) ||
+        e.departmentName.toLowerCase().includes(term)
+      );
+    }
+
+    return list;
   });
 
   // ==========================================
@@ -600,6 +638,7 @@ export class HrDashboardComponent implements OnInit {
           let msg = 'Đã xảy ra lỗi khi cập nhật.';
           if (err.error) {
             if (typeof err.error === 'string') msg = err.error;
+            else if (err.error.message) msg = err.error.message;
             else if (err.error.errors) msg = Object.values(err.error.errors).flat().join(' | ');
             else if (err.error.title) msg = err.error.title;
           }
@@ -618,6 +657,7 @@ export class HrDashboardComponent implements OnInit {
           let msg = 'Đã xảy ra lỗi khi thêm mới.';
           if (err.error) {
             if (typeof err.error === 'string') msg = err.error;
+            else if (err.error.message) msg = err.error.message;
             else if (err.error.errors) msg = Object.values(err.error.errors).flat().join(' | ');
             else if (err.error.title) msg = err.error.title;
           }
@@ -647,5 +687,13 @@ export class HrDashboardComponent implements OnInit {
   onDepartmentChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
     this.selectedDepartment.set(select.value);
+  }
+
+  /**
+   * Nhận giá trị từ <app-search-bar> (đã qua debounceTime 300ms)
+   * Cập nhật Signal searchTerm → computed filteredEmployees tự tính lại
+   */
+  onSearch(query: string): void {
+    this.searchTerm.set(query);
   }
 }
