@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Thuctap\\ThucTap_HocViec\\Backend\\SimpleErpApi\\SimpleErpApi.csproj": {}
+    "D:\\demo\\ThucTap_HocViec\\Backend\\SimpleErpApi\\SimpleErpApi.csproj": {}
   },
   "projects": {
-    "D:\\Thuctap\\ThucTap_HocViec\\Backend\\SimpleErpApi\\SimpleErpApi.csproj": {
+    "D:\\demo\\ThucTap_HocViec\\Backend\\SimpleErpApi\\SimpleErpApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Thuctap\\ThucTap_HocViec\\Backend\\SimpleErpApi\\SimpleErpApi.csproj",
+        "projectUniqueName": "D:\\demo\\ThucTap_HocViec\\Backend\\SimpleErpApi\\SimpleErpApi.csproj",
         "projectName": "SimpleErpApi",
-        "projectPath": "D:\\Thuctap\\ThucTap_HocViec\\Backend\\SimpleErpApi\\SimpleErpApi.csproj",
+        "projectPath": "D:\\demo\\ThucTap_HocViec\\Backend\\SimpleErpApi\\SimpleErpApi.csproj",
         "packagesPath": "C:\\Users\\thang\\.nuget\\packages\\",
-        "outputPath": "D:\\Thuctap\\ThucTap_HocViec\\Backend\\SimpleErpApi\\obj\\",
+        "outputPath": "D:\\demo\\ThucTap_HocViec\\Backend\\SimpleErpApi\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

@@ -49,7 +49,7 @@ import { AuthService } from '../services/auth.service';
                   type="text"
                   #user
                   name="username"
-                  placeholder="Nhập tên đăng nhập bất kỳ..."
+                  placeholder="Nhập tên đăng nhập"
                   class="w-full bg-slate-900/50 border border-slate-600/50 rounded-2xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 shadow-inner"
                 />
               </div>
@@ -64,7 +64,7 @@ import { AuthService } from '../services/auth.service';
                   type="password"
                   #pass
                   name="password"
-                  placeholder="Nhập mật khẩu bất kỳ..."
+                  placeholder="Nhập mật khẩu"
                   class="w-full bg-slate-900/50 border border-slate-600/50 rounded-2xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 shadow-inner"
                 />
               </div>

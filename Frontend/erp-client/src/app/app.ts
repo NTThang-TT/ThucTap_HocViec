@@ -20,17 +20,13 @@ import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/rou
         </div>
 
         <nav class="sidebar-nav">
-          <span class="nav-label">TUẦN 5</span>
+          <span class="nav-label"></span>
           <a routerLink="/hr-dashboard" routerLinkActive="active" class="nav-item">
             <span class="nav-icon">📊</span>
             <span>HR Dashboard</span>
           </a>
 
-          <span class="nav-label" style="margin-top: 12px;">TUẦN TRƯỚC</span>
-          <a routerLink="/nhan-su" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">👥</span>
-            <span>Nhân Sự (cũ)</span>
-          </a>
+         
           <a class="nav-item disabled">
             <span class="nav-icon">📁</span>
             <span>Dự án</span>
