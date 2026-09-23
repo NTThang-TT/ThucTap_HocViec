@@ -7,6 +7,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
 var app = builder.Build();
+app.MapGet("/", () => "API đang hoạt động! Hãy truy cập /api/Employees");
 
 // Cấu hình CORS để Angular gọi không bị lỗi
 app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
